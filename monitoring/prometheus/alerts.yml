@@ -1,0 +1,135 @@
+groups:
+  - name: service_alerts
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate for {{ $labels.job }}"
+          description: "Error rate is above 10% for {{ $labels.job }}"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage for {{ $labels.name }}"
+          description: "Memory usage is above 90% for container {{ $labels.name }}"
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage for {{ $labels.name }}"
+          description: "CPU usage is above 80% for container {{ $labels.name }}"
+
+  - name: rabbitmq_alerts
+    interval: 30s
+    rules:
+      - alert: RabbitMQQueueTooLong
+        expr: rabbitmq_queue_messages > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} is too long"
+          description: "Queue {{ $labels.queue }} has {{ $value }} messages"
+
+      - alert: RabbitMQNoConsumers
+        expr: rabbitmq_queue_consumers == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} has no consumers"
+          description: "No consumers connected to queue {{ $labels.queue }}"
+
+      - alert: RabbitMQHighMemoryUsage
+        expr: rabbitmq_node_mem_used / rabbitmq_node_mem_limit > 0.9
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ memory usage is high"
+          description: "RabbitMQ is using {{ $value | humanizePercentage }} of available memory"
+
+      - alert: RabbitMQDiskSpaceLow
+        expr: rabbitmq_node_disk_free < 1000000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ disk space is low"
+          description: "RabbitMQ has less than 1GB of free disk space"
+
+  - name: postgres_alerts
+    interval: 30s
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is not responding"
+
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_database_numbackends{datname="hitech"} / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has too many connections"
+          description: "PostgreSQL is using {{ $value | humanizePercentage }} of max connections"
+
+      - alert: PostgreSQLHighTransactionRate
+        expr: rate(pg_stat_database_xact_commit{datname="hitech"}[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL transaction rate is high"
+          description: "Transaction rate is {{ $value }} transactions/sec"
+
+      - alert: PostgreSQLDeadlocks
+        expr: rate(pg_stat_database_deadlocks{datname="hitech"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL deadlocks detected"
+          description: "Deadlocks detected in database {{ $labels.datname }}"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_activity_max_tx_duration > 300
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has slow queries"
+          description: "Query running for more than 5 minutes detected"
+
+      - alert: PostgreSQLLowCacheHitRatio
+        expr: (pg_stat_database_blks_hit{datname="hitech"} / (pg_stat_database_blks_hit{datname="hitech"} + pg_stat_database_blks_read{datname="hitech"})) < 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL cache hit ratio is low"
+          description: "Cache hit ratio is {{ $value | humanizePercentage }}"

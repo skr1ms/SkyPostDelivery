@@ -1,0 +1,23 @@
+[Unit]
+Description=Drone Parser Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/opt/drone-parser
+Environment="PATH=/opt/drone-parser/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/opt/drone-parser/.env
+ExecStartPre=/bin/sleep 5
+ExecStart=/opt/drone-parser/venv/bin/python /opt/drone-parser/main.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/drone-parser/service.log
+StandardError=append:/var/log/drone-parser/error.log
+
+[Install]
+WantedBy=multi-user.target
+

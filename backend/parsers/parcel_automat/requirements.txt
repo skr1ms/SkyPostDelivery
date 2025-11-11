@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+httpx
+pyserial
+python-dotenv
+opencv-python-headless
+pyzbar
+numpy
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock

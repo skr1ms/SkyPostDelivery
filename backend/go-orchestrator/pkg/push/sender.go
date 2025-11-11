@@ -1,0 +1,89 @@
+package push
+
+import (
+	"context"
+	"fmt"
+
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
+	"google.golang.org/api/option"
+)
+
+type DeliveryPayload struct {
+	OrderID      string
+	LockerCellID *string
+}
+
+type Sender interface {
+	SendDeliveryNotification(ctx context.Context, tokens []string, payload DeliveryPayload) ([]string, error)
+}
+
+type fcmSender struct {
+	client *messaging.Client
+}
+
+type noopSender struct{}
+
+func NewFCMSender(ctx context.Context, credentialsFile string) (Sender, error) {
+	opts := []option.ClientOption{}
+	if credentialsFile != "" {
+		opts = append(opts, option.WithCredentialsFile(credentialsFile))
+	}
+	app, err := firebase.NewApp(ctx, nil, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("push - NewFCMSender - firebase.NewApp: %w", err)
+	}
+	client, err := app.Messaging(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("push - NewFCMSender - app.Messaging: %w", err)
+	}
+	return &fcmSender{client: client}, nil
+}
+
+func NewNoopSender() Sender {
+	return &noopSender{}
+}
+
+func (s *fcmSender) SendDeliveryNotification(ctx context.Context, tokens []string, payload DeliveryPayload) ([]string, error) {
+	if len(tokens) == 0 {
+		return nil, nil
+	}
+
+	data := map[string]string{
+		"order_id": payload.OrderID,
+	}
+	if payload.LockerCellID != nil && *payload.LockerCellID != "" {
+		data["locker_cell_id"] = *payload.LockerCellID
+	}
+
+	message := &messaging.MulticastMessage{
+		Tokens: tokens,
+		Notification: &messaging.Notification{
+			Title: "Посылка доставлена",
+			Body:  "Заказ готов к выдаче",
+		},
+		Data: data,
+	}
+
+	sendResponses, err := s.client.SendEachForMulticast(ctx, message)
+	if err != nil {
+		return nil, fmt.Errorf("push - fcmSender - SendEachForMulticast: %w", err)
+	}
+
+	invalid := make([]string, 0)
+	for index, resp := range sendResponses.Responses {
+		if resp.Success || resp.Error == nil {
+			continue
+		}
+
+		if messaging.IsUnregistered(resp.Error) ||
+			messaging.IsInvalidArgument(resp.Error) {
+			invalid = append(invalid, tokens[index])
+		}
+	}
+	return invalid, nil
+}
+
+func (s *noopSender) SendDeliveryNotification(ctx context.Context, tokens []string, payload DeliveryPayload) ([]string, error) {
+	return nil, nil
+}

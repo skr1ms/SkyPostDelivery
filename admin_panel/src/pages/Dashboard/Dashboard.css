@@ -1,0 +1,155 @@
+.dashboard {
+  animation: fadeIn 0.5s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #6c5ce7 0%, #ff6b9d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.page-header p {
+  color: #a7a9be;
+  font-size: 1.125rem;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 350px));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+  max-width: 1200px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #1e1d2b 0%, #252434 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-color, #6c5ce7);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  border-color: var(--card-color, #6c5ce7);
+}
+
+.stat-icon {
+  font-size: 3rem;
+  background: rgba(108, 92, 231, 0.1);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.stat-info h3 {
+  color: #a7a9be;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fffffe;
+}
+
+.info-section {
+  margin-top: 2rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.info-card {
+  background: linear-gradient(135deg, #1e1d2b 0%, #252434 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  text-align: center;
+}
+
+.info-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #fffffe;
+  text-align: center;
+}
+
+.info-card p {
+  color: #a7a9be;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.info-card ul {
+  list-style: none;
+  padding: 0;
+  display: inline-block;
+  text-align: left;
+}
+
+.info-card ul li {
+  color: #a7a9be;
+  line-height: 2;
+  padding-left: 0.5rem;
+}
+
+.info-card ul li strong {
+  color: #fffffe;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}

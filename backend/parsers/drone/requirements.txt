@@ -1,0 +1,13 @@
+websockets
+pydantic
+python-dotenv
+opencv-python-headless
+numpy
+picamera2
+pyserial
+reportlab
+pillow
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock

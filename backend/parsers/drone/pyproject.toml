@@ -1,0 +1,9 @@
+[project]
+name = "drone-client"
+version = "1.0.0"
+description = "Drone client application for hiTech delivery system"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

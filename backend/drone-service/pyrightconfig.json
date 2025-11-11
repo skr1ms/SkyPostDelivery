@@ -1,0 +1,27 @@
+{
+  "include": [
+    "app",
+    "config",
+    "main.py"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "venv",
+    "tests"
+  ],
+  "extraPaths": [
+    ".",
+    "./proto"
+  ],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "All",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "stubPath": "",
+  "venvPath": ".",
+  "venv": "venv"
+}
+

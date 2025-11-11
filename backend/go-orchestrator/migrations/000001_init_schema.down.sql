@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS deliveries;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS locker_cells;
+DROP TABLE IF EXISTS parcel_automats;
+DROP TABLE IF EXISTS drones;
+DROP TABLE IF EXISTS goods;
+DROP TABLE IF EXISTS users;
+DROP INDEX IF EXISTS idx_user_devices_user_id;
+DROP TABLE IF EXISTS user_devices;

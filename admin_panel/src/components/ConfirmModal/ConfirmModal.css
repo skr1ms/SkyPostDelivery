@@ -1,0 +1,36 @@
+.confirm-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.confirm-message {
+  color: #fffffe;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.confirm-modal-danger .confirm-message {
+  color: #f25f4c;
+}
+
+.confirm-modal-primary .confirm-message {
+  color: #6c5ce7;
+}
+
+.confirm-modal-secondary .confirm-message {
+  color: #a7a9be;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirm-actions button {
+  min-width: 120px;
+}
+
