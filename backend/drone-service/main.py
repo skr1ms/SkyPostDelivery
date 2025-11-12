@@ -17,18 +17,41 @@ from app.dependencies import (
 from app.services.workers.delivery import DeliveryWorker
 from app.api.prometheus import PrometheusMiddleware, metrics_handler
 
-delivery_worker = DeliveryWorker(rabbitmq_client, delivery_use_case)
+delivery_worker = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_dependencies()
+    global delivery_worker
+    import logging
+    logger = logging.getLogger("drone-service")
 
-    asyncio.create_task(delivery_worker.start())
+    logger.warning("="*60)
+    logger.warning("LIFESPAN STARTING - INITIALIZING DEPENDENCIES")
+    logger.warning("="*60)
+
+    await init_dependencies()
+    logger.warning("Dependencies initialized")
+
+    delivery_worker = DeliveryWorker(rabbitmq_client, delivery_use_case)
+    logger.warning("Delivery worker created")
+
+    try:
+        logger.warning("Starting delivery worker consume...")
+        await delivery_worker.start()
+        logger.warning("="*60)
+        logger.warning("DELIVERY WORKER STARTED SUCCESSFULLY")
+        logger.warning("="*60)
+    except Exception as e:
+        logger.error(f"FAILED TO START DELIVERY WORKER: {e}")
+        import traceback
+        traceback.print_exc()
 
     yield
 
-    await delivery_worker.stop()
+    logger.warning("Shutting down delivery worker...")
+    if delivery_worker:
+        await delivery_worker.stop()
     await cleanup()
 
 
@@ -108,10 +131,10 @@ async def get_status():
                 "current_delivery_id": None,
                 "error_message": "No drones registered"
             }
-        
+
         drone_id = drones[0]
         state = await drone_manager.get_drone_state(drone_id)
-        
+
         if state:
             return {
                 "drone_id": state.drone_id,

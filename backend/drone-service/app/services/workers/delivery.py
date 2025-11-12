@@ -18,7 +18,8 @@ class DeliveryWorker:
         
     async def start(self):
         self._running = True
-        await self.rabbitmq_client.connect()
+        
+        logger.info("Starting delivery worker, setting up consumers...")
         
         await self.rabbitmq_client.consume(
             "deliveries",
@@ -33,7 +34,7 @@ class DeliveryWorker:
             self.handle_return_task
         )
         
-        logger.info("Delivery worker started successfully (including return queue)")
+        logger.info("Delivery worker started successfully (consuming: deliveries, deliveries.priority, delivery.return)")
         
     async def handle_delivery_task(self, message: dict):
         """

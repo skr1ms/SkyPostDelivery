@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -87,6 +88,7 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 
 	drone, err := uc.droneRepo.GetAvailable(ctx)
 	if err != nil {
+		log.Printf("[ORDER] No available drone for order %s: %v", order.ID, err)
 		_, deliveryErr := uc.deliveryRepo.Create(ctx, order.ID, nil, parcelAutomat.ID, "awaiting_drone")
 		if deliveryErr != nil {
 			fmt.Printf("Warning: failed to create delivery record for order %s: %v\n", order.ID, deliveryErr)
@@ -94,15 +96,23 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 		return order, nil
 	}
 
+	log.Printf("[ORDER] Selected drone %s (%s) for order %s", drone.ID, drone.IPAddress, order.ID)
+
 	if err := uc.droneRepo.UpdateStatus(ctx, drone.ID, "busy"); err != nil {
+		log.Printf("[ORDER] Failed to update status to busy for drone %s (order %s): %v", drone.ID, order.ID, err)
 		return order, nil
 	}
 
+	log.Printf("[ORDER] Drone %s status updated to busy for order %s", drone.ID, order.ID)
+
 	delivery, err := uc.deliveryRepo.Create(ctx, order.ID, &drone.ID, parcelAutomat.ID, "pending")
 	if err != nil {
+		log.Printf("[ORDER] Failed to create delivery for order %s with drone %s: %v", order.ID, drone.ID, err)
 		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
 		return order, nil
 	}
+
+	log.Printf("[ORDER] Created delivery %s for order %s (drone %s)", delivery.ID, order.ID, drone.ID)
 
 	deliveryTask := rabbitmq.DeliveryTask{
 		DroneID:         drone.ID,
@@ -125,11 +135,16 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 		queueName = rabbitmq.QueueDeliveriesPriority
 	}
 
+	log.Printf("[ORDER] Publishing task for order %s to queue %s (drone %s, aruco %d)", order.ID, queueName, drone.ID, deliveryTask.ArucoID)
+
 	if err := uc.rabbitmqClient.Publish(ctx, queueName, deliveryTask); err != nil {
+		log.Printf("[ORDER] Publish failed for order %s: %v", order.ID, err)
 		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
 		uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "failed")
 		return order, nil
 	}
+
+	log.Printf("[ORDER] Task published for order %s (queue %s)", order.ID, queueName)
 
 	return order, nil
 }

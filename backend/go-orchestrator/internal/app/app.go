@@ -116,7 +116,7 @@ func Run(cfg *config.Config) {
 	go deliveryUC.StartConfirmationConsumer()
 	log.Println("Started delivery confirmation consumer")
 
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 	router := gin.New()
 
 	router.Use(gin.Recovery())

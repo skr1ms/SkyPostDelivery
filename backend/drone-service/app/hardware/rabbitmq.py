@@ -33,7 +33,8 @@ class RabbitMQClient:
             arguments = {
                 "x-dead-letter-exchange": "",
                 "x-dead-letter-routing-key": "deliveries.dlq",
-                "x-message-ttl": 3600000
+                "x-message-ttl": 3600000,
+                "x-max-priority": 10
             }
             
         queue = await self.channel.declare_queue(
