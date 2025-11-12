@@ -73,20 +73,21 @@ class DeliveryUseCase:
     async def execute_delivery(
         self,
         drone_id: str,
+        order_id: str,
         good_id: str,
         parcel_automat_id: str,
         aruco_id: int,
-        coordinates: str,
-        weight: float,
-        height: float,
-        length: float,
-        width: float
+        coordinates: str = "",
+        weight: float = 0,
+        height: float = 0,
+        length: float = 0,
+        width: float = 0
     ):
-        delivery_id = str(uuid.uuid4())
-        
+        delivery_id = order_id
+
         task = DeliveryTask(
             delivery_id=delivery_id,
-            order_id=delivery_id,
+            order_id=order_id,
             good_id=good_id,
             locker_cell_id="",
             drone_id=drone_id,
@@ -100,6 +101,7 @@ class DeliveryUseCase:
             created_at=datetime.now()
         )
         task.aruco_id = aruco_id
+        task.coordinates = coordinates
         await self._execute_delivery(task)
 
     async def _execute_delivery(self, task: DeliveryTask):
@@ -113,10 +115,11 @@ class DeliveryUseCase:
             if self.drone_ws_handler:
                 task_data = {
                     "delivery_id": task.delivery_id,
+                    "order_id": task.order_id,
                     "good_id": task.good_id,
                     "parcel_automat_id": task.parcel_automat_id,
                     "aruco_id": task.aruco_id,
-                    "coordinates": coordinates if coordinates else "",
+                    "coordinates": getattr(task, 'coordinates', ""),
                     "dimensions": {
                         "weight": task.dimensions.weight,
                         "height": task.dimensions.height,
@@ -223,3 +226,25 @@ class DeliveryUseCase:
             return {"success": True, "message": "Cargo dropped successfully"}
         except Exception as e:
             return {"success": False, "message": f"Failed to handle cargo drop: {str(e)}"}
+
+    async def send_return_command(self, drone_id: str, base_marker_id: int = 131) -> Dict[str, Any]:
+        try:
+            if not self.drone_ws_handler:
+                return {"success": False, "message": "WebSocket handler not available"}
+
+            command_data = {
+                "command": "return_to_base",
+                "base_marker_id": base_marker_id
+            }
+
+            success = await self.drone_ws_handler.send_command_to_drone(drone_id, command_data)
+
+            if success:
+                if drone_id in self.drone_manager.registered_drones:
+                    await self.drone_manager.release_drone(drone_id)
+
+                return {"success": True, "message": f"Return command sent to drone {drone_id}"}
+            else:
+                return {"success": False, "message": f"Failed to send return command to drone {drone_id}"}
+        except Exception as e:
+            return {"success": False, "message": f"Failed to send return command: {str(e)}"}
