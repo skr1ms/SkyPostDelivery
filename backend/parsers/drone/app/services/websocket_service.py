@@ -60,19 +60,23 @@ class WebSocketService:
 
                 await self._send_initial_status()
 
-                try:
-                    from ..hardware.camera import CameraController
-                    self.camera = CameraController()
-                    if self.camera.initialize():
-                        logger.info(
-                            "Camera initialized, starting video stream")
-                    else:
-                        logger.warning(
-                            "Camera initialization failed, video disabled")
-                        self.camera = None
-                except Exception as e:
-                    logger.error(f"Error initializing camera: {e}")
+                if self.ros_bridge:
+                    logger.info("Using ROS camera stream, skipping local camera initialization")
                     self.camera = None
+                else:
+                    try:
+                        from ..hardware.camera import CameraController
+                        self.camera = CameraController()
+                        if self.camera.initialize():
+                            logger.info(
+                                "Camera initialized, starting video stream")
+                        else:
+                            logger.warning(
+                                "Camera initialization failed, video disabled")
+                            self.camera = None
+                    except Exception as e:
+                        logger.error(f"Error initializing camera: {e}")
+                        self.camera = None
 
                 if self.heartbeat_task:
                     self.heartbeat_task.cancel()

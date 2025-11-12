@@ -1,5 +1,6 @@
 import os
 import cv2
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,7 +9,7 @@ load_dotenv()
 class Settings:
     drone_ip: str = os.getenv("DRONE_IP", "192.168.10.3")
 
-    drone_id: str | None = None
+    drone_id: Optional[str] = None
 
     drone_service_host: str = os.getenv("DRONE_SERVICE_HOST", "localhost")
     drone_service_port: int = int(os.getenv("DRONE_SERVICE_PORT", "8001"))
