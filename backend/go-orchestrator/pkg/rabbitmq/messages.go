@@ -5,6 +5,7 @@ import "github.com/google/uuid"
 type DeliveryTask struct {
 	DroneID         uuid.UUID `json:"drone_id"`
 	DroneIP         string    `json:"drone_ip"`
+	OrderID         uuid.UUID `json:"order_id"`
 	GoodID          uuid.UUID `json:"good_id"`
 	ParcelAutomatID uuid.UUID `json:"parcel_automat_id"`
 	ArucoID         int       `json:"aruco_id"`

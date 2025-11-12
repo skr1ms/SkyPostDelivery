@@ -107,6 +107,7 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 	deliveryTask := rabbitmq.DeliveryTask{
 		DroneID:         drone.ID,
 		DroneIP:         drone.IPAddress,
+		OrderID:         order.ID,
 		GoodID:          goodID,
 		ParcelAutomatID: parcelAutomat.ID,
 		ArucoID:         parcelAutomat.ArucoID,

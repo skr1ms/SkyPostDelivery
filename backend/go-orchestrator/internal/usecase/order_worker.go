@@ -83,6 +83,7 @@ func (uc *OrderUseCase) processPendingOrders(ctx context.Context) {
 		deliveryTask := rabbitmq.DeliveryTask{
 			DroneID:         drone.ID,
 			DroneIP:         drone.IPAddress,
+			OrderID:         order.ID,
 			GoodID:          order.GoodID,
 			ParcelAutomatID: parcelAutomat.ID,
 			ArucoID:         parcelAutomat.ArucoID,

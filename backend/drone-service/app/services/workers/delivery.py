@@ -42,6 +42,7 @@ class DeliveryWorker:
         {
             "drone_id": uuid,
             "drone_ip": string,
+            "order_id": uuid,
             "good_id": uuid,
             "parcel_automat_id": uuid,
             "aruco_id": int,
@@ -56,6 +57,7 @@ class DeliveryWorker:
         """
         try:
             drone_id = UUID(message["drone_id"])
+            order_id = UUID(message["order_id"])
             good_id = UUID(message["good_id"])
             parcel_automat_id = UUID(message["parcel_automat_id"])
             aruco_id = int(message["aruco_id"])
@@ -69,12 +71,13 @@ class DeliveryWorker:
             
             logger.info(
                 f"Processing delivery task: "
-                f"drone_id={drone_id}, good_id={good_id}, aruco_id={aruco_id}, "
+                f"drone_id={drone_id}, order_id={order_id}, good_id={good_id}, aruco_id={aruco_id}, "
                 f"coordinates={coordinates}, priority={priority}, drone_ip={drone_ip}"
             )
             
             await self.delivery_use_case.execute_delivery(
                 drone_id=str(drone_id),
+                order_id=str(order_id),
                 good_id=str(good_id),
                 parcel_automat_id=str(parcel_automat_id),
                 aruco_id=aruco_id,
@@ -85,7 +88,7 @@ class DeliveryWorker:
                 width=width
             )
             
-            logger.info(f"Successfully completed delivery for good {good_id}")
+            logger.info(f"Successfully completed delivery for order {order_id}")
             
         except Exception as e:
             logger.error(f"Failed to process delivery task: {e}", exc_info=True)

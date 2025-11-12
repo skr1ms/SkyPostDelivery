@@ -75,22 +75,20 @@ class DeliveryUseCase:
         drone_id: str,
         order_id: str,
         good_id: str,
-        instance_id: str,
-        cell_id: str,
         parcel_automat_id: str,
-        storage_location: str,
         aruco_id: int,
-        weight: float,
-        height: float,
-        length: float,
-        width: float
+        coordinates: str = "",
+        weight: float = 0,
+        height: float = 0,
+        length: float = 0,
+        width: float = 0
     ):
         task = DeliveryTask(
             delivery_id=order_id,
             order_id=order_id,
             good_id=good_id,
             drone_id=drone_id,
-            locker_cell_id=cell_id,
+            locker_cell_id="",
             parcel_automat_id=parcel_automat_id,
             dimensions=GoodDimensions(
                 weight=weight,
@@ -100,6 +98,7 @@ class DeliveryUseCase:
             )
         )
         task.aruco_id = aruco_id
+        task.coordinates = coordinates
         await self._execute_delivery(task)
 
     async def _execute_delivery(self, task: DeliveryTask):
