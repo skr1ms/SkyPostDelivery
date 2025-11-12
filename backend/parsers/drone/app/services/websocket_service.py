@@ -29,6 +29,7 @@ class WebSocketService:
         self.camera = None
         self.delivery_service = None
         self.ros_bridge = None
+        self.flight_manager = None
 
     async def connect(self):
         while True:
@@ -65,19 +66,19 @@ class WebSocketService:
                         "Using ROS camera stream, skipping local camera initialization")
                     self.camera = None
                 else:
-                try:
-                    from ..hardware.camera import CameraController
-                    self.camera = CameraController()
-                    if self.camera.initialize():
-                        logger.info(
-                            "Camera initialized, starting video stream")
-                    else:
-                        logger.warning(
-                            "Camera initialization failed, video disabled")
+                    try:
+                        from ..hardware.camera import CameraController
+                        self.camera = CameraController()
+                        if self.camera.initialize():
+                            logger.info(
+                                "Camera initialized, starting video stream")
+                        else:
+                            logger.warning(
+                                "Camera initialization failed, video disabled")
+                            self.camera = None
+                    except Exception as e:
+                        logger.error(f"Error initializing camera: {e}")
                         self.camera = None
-                except Exception as e:
-                    logger.error(f"Error initializing camera: {e}")
-                    self.camera = None
 
                 if self.heartbeat_task:
                     self.heartbeat_task.cancel()
@@ -136,12 +137,14 @@ class WebSocketService:
         if command == "drop_cargo":
             order_id = payload.get("order_id")
             cell_id = payload.get("cell_id")
+            internal_cell_id = payload.get("internal_cell_id")
             logger.info(
-                f"Drop cargo command for order {order_id}, cell {cell_id}")
+                f"Drop cargo command for order {order_id}, cell {cell_id}, internal {internal_cell_id}")
 
             if self.delivery_service:
                 self.delivery_service.cargo_drop_approved = True
                 self.delivery_service.target_cell_id = cell_id
+                self.delivery_service.target_internal_cell_id = internal_cell_id
 
         elif command == "return_to_base":
             base_marker_id = payload.get("base_marker_id", 131)
@@ -293,7 +296,7 @@ class WebSocketService:
                 if self.ros_bridge:
                     frame_base64 = self.ros_bridge.get_frame()
                 elif self.camera:
-                frame_base64 = self.camera.capture_frame()
+                    frame_base64 = self.camera.capture_frame()
 
                 if frame_base64:
                     frame_counter += 1

@@ -9,7 +9,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-cell_repo = CellMappingRepository(mapping_file=settings.cells_mapping_file)
+cell_repo_out = CellMappingRepository(mapping_file=settings.cells_out_mapping_file)
+cell_repo_internal = CellMappingRepository(mapping_file=settings.cells_internal_mapping_file)
 
 arduino_controller = ArduinoController(
     port=settings.arduino_port,
@@ -29,7 +30,8 @@ display = DisplayController(
 )
 
 cell_service = CellManagementService(
-    cell_repo=cell_repo,
+    cell_repo=cell_repo_out,
+    internal_repo=cell_repo_internal,
     arduino_controller=arduino_controller,
     display=display
 )

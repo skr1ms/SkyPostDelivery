@@ -18,6 +18,7 @@ func TestOrderUseCase_processPendingOrders_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -27,6 +28,7 @@ func TestOrderUseCase_processPendingOrders_Success(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -96,6 +98,7 @@ func TestOrderUseCase_processPendingOrders_NoAvailableDrone(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -105,6 +108,7 @@ func TestOrderUseCase_processPendingOrders_NoAvailableDrone(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -136,6 +140,7 @@ func TestOrderUseCase_processPendingOrders_NoDeliveries(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -145,6 +150,7 @@ func TestOrderUseCase_processPendingOrders_NoDeliveries(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -164,6 +170,7 @@ func TestOrderUseCase_StartPendingOrdersWorker_Cancellation(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -173,6 +180,7 @@ func TestOrderUseCase_StartPendingOrdersWorker_Cancellation(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 

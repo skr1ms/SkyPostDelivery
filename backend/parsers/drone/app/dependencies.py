@@ -2,6 +2,7 @@ import logging
 from .services.websocket_service import WebSocketService
 from .services.delivery_service import DeliveryService
 from .models.schemas import DeliveryTaskPayload
+from .hardware.flight_manager import flight_manager
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,24 @@ async def handle_delivery_task(payload: dict):
         logger.info(f"Delivery task {task.delivery_id}")
         logger.info(f"Good: {task.good_id}, Target: {task.parcel_automat_id}, Marker: {task.aruco_id}")
         
-        await delivery_service.execute_delivery(task)
+        coordinates = getattr(task, 'coordinates', '0,0')
+        coords_parts = coordinates.split(',')
+        x_coord = float(coords_parts[0]) if len(coords_parts) > 0 else 0.0
+        y_coord = float(coords_parts[1]) if len(coords_parts) > 1 else 0.0
+        
+        logger.info(f"Launching flight script: ArUco {task.aruco_id} at ({x_coord}, {y_coord})")
+        
+        success = await flight_manager.launch_delivery_flight(
+            aruco_id=task.aruco_id,
+            x=x_coord,
+            y=y_coord
+        )
+        
+        if success:
+            logger.info("Flight script launched successfully")
+        else:
+            logger.error("Failed to launch flight script")
+            
     except Exception as e:
         logger.error(f"Error processing delivery: {e}")
 

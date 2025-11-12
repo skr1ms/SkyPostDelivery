@@ -1,12 +1,34 @@
-from pydantic import BaseModel, Field
-from typing import List
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 
 
 class CellsPayload(BaseModel):
-    cells: List[str] = Field(...,
-                             description="Список UUID ячеек в порядке их создания")
+    cells_out: Optional[List[str]] = Field(
+        default=None, description="Список UUID внешних ячеек (по порядку)"
+    )
+    cells_internal: Optional[List[str]] = Field(
+        default=None, description="Список UUID внутренних дверей (по порядку)"
+    )
+    cells: Optional[List[str]] = Field(
+        default=None, description="УСТАРЕВШЕЕ поле: список UUID внешних ячеек"
+    )
     parcel_automat_id: str = Field(..., description="UUID постамата")
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_cells(cls, values: Dict) -> Dict:
+        if "cells_out" not in values or values.get("cells_out") is None:
+            legacy = values.get("cells")
+            if legacy:
+                values["cells_out"] = legacy
+        if values.get("cells_out") is None:
+            raise ValueError(
+                "cells_out field is required (or provide legacy 'cells')")
+        if values.get("cells_internal") is None:
+            values["cells_internal"] = []
+        return values
 
 
 class QRScanRequest(BaseModel):
@@ -31,8 +53,10 @@ class ConfirmLoadedRequest(BaseModel):
 
 
 class CellMappingResponse(BaseModel):
-    mapping: dict
+    mapping: Dict
     cells_count: int
+    internal_mapping: Dict = Field(default_factory=dict)
+    internal_cells_count: int = 0
 
 
 class CellUUIDResponse(BaseModel):

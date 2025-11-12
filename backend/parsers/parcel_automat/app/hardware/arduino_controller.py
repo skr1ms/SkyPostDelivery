@@ -13,6 +13,7 @@ class ArduinoController:
         self.serial_connection = None
         self._mock_mode = mock_mode or (port is None)
         self._mock_cells_state = {}
+        self._mock_internal_state = {}
 
         if self._mock_mode:
             logger.info("Running Arduino controller in MOCK mode")
@@ -35,19 +36,20 @@ class ArduinoController:
     def _send_command(self, command: str) -> str:
         if self._mock_mode:
             logger.info(f"MOCK: Sending to Arduino: {command}")
-            if command.startswith("cells_"):
-                return "4"
+            if command == "cells":
+                return "3"
+            elif command.startswith("internal_"):
+                door_num = command.split("_")[1]
+                self._mock_internal_state[door_num] = "opened"
+                return "OK"
             elif command.startswith("open_"):
                 cell_num = command.split("_")[1]
                 self._mock_cells_state[cell_num] = "opened"
                 return "OK"
-            elif command.startswith("close_"):
-                cell_num = command.split("_")[1]
-                self._mock_cells_state[cell_num] = "closed"
+            elif command == "reset":
+                self._mock_cells_state.clear()
+                self._mock_internal_state.clear()
                 return "OK"
-            elif command.startswith("status_"):
-                cell_num = command.split("_")[1]
-                return self._mock_cells_state.get(cell_num, "closed")
             return "OK"
 
         try:
@@ -68,19 +70,15 @@ class ArduinoController:
         return response
 
     def close_cell(self, cell_number: int) -> str:
-        command = f"close_{cell_number}"
-        response = self._send_command(command)
-        logger.info(f"Closed cell {cell_number}, response: {response}")
-        return response
+        logger.info(f"Close cell {cell_number} requested - Arduino handles this automatically")
+        return "OK"
 
     def get_cell_status(self, cell_number: int) -> str:
-        command = f"status_{cell_number}"
-        response = self._send_command(command)
-        logger.info(f"Status of cell {cell_number}: {response}")
-        return response
+        logger.info(f"Status of cell {cell_number} - not supported by Arduino, returning 'closed'")
+        return "closed"
 
     def get_cells_count(self) -> Optional[int]:
-        command = "cells_0"
+        command = "cells"
         response = self._send_command(command)
 
         try:
@@ -91,6 +89,24 @@ class ArduinoController:
             logger.warning(
                 f"Invalid cells count response from Arduino: {response}")
             return None
+
+    def open_internal_door(self, door_number: int) -> str:
+        command = f"internal_{door_number}"
+        response = self._send_command(command)
+        logger.info(f"Opened internal door {door_number}, response: {response}")
+        return response
+
+    def close_internal_door(self, door_number: int) -> str:
+        logger.info(f"Close internal door {door_number} requested - Arduino handles this automatically")
+        return "OK"
+
+    def get_internal_status(self, door_number: int) -> str:
+        logger.info(f"Status of internal door {door_number} - not supported by Arduino, returning 'closed'")
+        return "closed"
+
+    def get_internal_cells_count(self) -> Optional[int]:
+        logger.info("Internal cells count - returning hardcoded 3 (same as external)")
+        return 3
 
     def close(self):
         if self.serial_connection and not self._mock_mode:

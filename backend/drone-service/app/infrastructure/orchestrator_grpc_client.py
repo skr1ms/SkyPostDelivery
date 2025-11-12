@@ -45,13 +45,15 @@ class OrchestratorGRPCClient:
             return {
                 "success": response.success,
                 "message": response.message,
-                "cell_id": response.cell_id
+                "cell_id": response.cell_id,
+                "internal_cell_id": response.internal_cell_id or "",
             }
         except Exception as e:
             print(f"Failed to request cell open: {e}")
             return {
                 "success": False,
                 "message": str(e),
-                "cell_id": ""
+                "cell_id": "",
+                "internal_cell_id": "",
             }
 

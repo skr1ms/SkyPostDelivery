@@ -10,13 +10,14 @@ import (
 )
 
 type Delivery struct {
-	ID              uuid.UUID        `json:"id"`
-	OrderID         uuid.UUID        `json:"order_id"`
-	DroneID         pgtype.UUID      `json:"drone_id"`
-	ParcelAutomatID uuid.UUID        `json:"parcel_automat_id"`
-	Status          string           `json:"status"`
-	StartedAt       pgtype.Timestamp `json:"started_at"`
-	CompletedAt     pgtype.Timestamp `json:"completed_at"`
+	ID                   uuid.UUID        `json:"id"`
+	OrderID              uuid.UUID        `json:"order_id"`
+	DroneID              pgtype.UUID      `json:"drone_id"`
+	ParcelAutomatID      uuid.UUID        `json:"parcel_automat_id"`
+	InternalLockerCellID pgtype.UUID      `json:"internal_locker_cell_id"`
+	Status               string           `json:"status"`
+	StartedAt            pgtype.Timestamp `json:"started_at"`
+	CompletedAt          pgtype.Timestamp `json:"completed_at"`
 }
 
 type Drone struct {
@@ -39,13 +40,24 @@ type Good struct {
 	QuantityAvailable int32     `json:"quantity_available"`
 }
 
-type LockerCell struct {
-	ID     uuid.UUID `json:"id"`
-	PostID uuid.UUID `json:"post_id"`
-	Height float64   `json:"height"`
-	Length float64   `json:"length"`
-	Width  float64   `json:"width"`
-	Status string    `json:"status"`
+type LockerCellsInternal struct {
+	ID         uuid.UUID `json:"id"`
+	PostID     uuid.UUID `json:"post_id"`
+	Height     float64   `json:"height"`
+	Length     float64   `json:"length"`
+	Width      float64   `json:"width"`
+	Status     string    `json:"status"`
+	CellNumber *int32    `json:"cell_number"`
+}
+
+type LockerCellsOut struct {
+	ID         uuid.UUID `json:"id"`
+	PostID     uuid.UUID `json:"post_id"`
+	Height     float64   `json:"height"`
+	Length     float64   `json:"length"`
+	Width      float64   `json:"width"`
+	Status     string    `json:"status"`
+	CellNumber *int32    `json:"cell_number"`
 }
 
 type Order struct {
@@ -82,4 +94,13 @@ type User struct {
 	Role             string           `json:"role"`
 	QrIssuedAt       pgtype.Timestamp `json:"qr_issued_at"`
 	QrExpiresAt      pgtype.Timestamp `json:"qr_expires_at"`
+}
+
+type UserDevice struct {
+	ID        uuid.UUID        `json:"id"`
+	UserID    uuid.UUID        `json:"user_id"`
+	Token     string           `json:"token"`
+	Platform  string           `json:"platform"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
 }

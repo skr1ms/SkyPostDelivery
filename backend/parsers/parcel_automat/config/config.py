@@ -14,8 +14,13 @@ class Settings:
     go_orchestrator_url: str = os.getenv(
         "GO_ORCHESTRATOR_URL", "http://localhost:8080/api/v1")
 
-    cells_mapping_file: Path = Path(
-        os.getenv("CELLS_MAPPING_FILE", "data/cells_mapping.json"))
+    cells_out_mapping_file: Path = Path(
+        os.getenv("CELLS_OUT_MAPPING_FILE", "data/cells_out_mapping.json"))
+
+    cells_internal_mapping_file: Path = Path(
+        os.getenv("CELLS_INTERNAL_MAPPING_FILE", "data/cells_internal_mapping.json"))
+
+    cells_mapping_file: Path = cells_out_mapping_file
 
     camera_device: int = int(os.getenv("CAMERA_INDEX", "0"))
     qr_scan_interval: float = float(os.getenv("QR_SCAN_INTERVAL", "0.1"))

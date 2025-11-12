@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,11 @@ from app.dependencies import (
 )
 from app.services.workers.delivery import DeliveryWorker
 from app.api.prometheus import PrometheusMiddleware, metrics_handler
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 delivery_worker = None
 

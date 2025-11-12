@@ -55,13 +55,24 @@ CREATE TABLE IF NOT EXISTS parcel_automats (
     is_working BOOLEAN NOT NULL DEFAULT true
 );
 
-CREATE TABLE IF NOT EXISTS locker_cells (
+CREATE TABLE IF NOT EXISTS locker_cells_out (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     post_id UUID NOT NULL REFERENCES parcel_automats(id) ON DELETE CASCADE,
     height DECIMAL(10, 2) NOT NULL,
     length DECIMAL(10, 2) NOT NULL,
     width DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'available'
+    status VARCHAR(50) NOT NULL DEFAULT 'available',
+    cell_number INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS locker_cells_internal (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID NOT NULL REFERENCES parcel_automats(id) ON DELETE CASCADE,
+    height DECIMAL(10, 2) NOT NULL,
+    length DECIMAL(10, 2) NOT NULL,
+    width DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'available',
+    cell_number INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -69,7 +80,7 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     good_id UUID NOT NULL REFERENCES goods(id) ON DELETE CASCADE,
     parcel_automat_id UUID NOT NULL REFERENCES parcel_automats(id) ON DELETE CASCADE,
-    locker_cell_id UUID REFERENCES locker_cells(id) ON DELETE SET NULL,
+    locker_cell_id UUID REFERENCES locker_cells_out(id) ON DELETE SET NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,6 +90,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     drone_id UUID REFERENCES drones(id) ON DELETE SET NULL,
     parcel_automat_id UUID NOT NULL REFERENCES parcel_automats(id) ON DELETE CASCADE,
+    internal_locker_cell_id UUID REFERENCES locker_cells_internal(id),
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
     started_at TIMESTAMP,
     completed_at TIMESTAMP
@@ -88,7 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status);
 CREATE INDEX IF NOT EXISTS idx_deliveries_drone_id ON deliveries(drone_id);
-CREATE INDEX IF NOT EXISTS idx_locker_cells_status ON locker_cells(status);
+CREATE INDEX IF NOT EXISTS idx_locker_cells_out_status ON locker_cells_out(status);
+CREATE INDEX IF NOT EXISTS idx_locker_cells_internal_status ON locker_cells_internal(status);
 CREATE INDEX IF NOT EXISTS idx_users_phone_number ON users(phone_number);
 CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON user_devices(user_id);
 CREATE INDEX IF NOT EXISTS idx_parcel_automats_ip_address ON parcel_automats(ip_address);

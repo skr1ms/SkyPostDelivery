@@ -10,17 +10,18 @@ import (
 	"github.com/skr1ms/hitech-ekb/internal/entity"
 	"github.com/skr1ms/hitech-ekb/pkg/qr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestParcelAutomatUseCase_Create_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
-
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	city := "Moscow"
@@ -50,11 +51,9 @@ func TestParcelAutomatUseCase_Create_Success(t *testing.T) {
 
 	mockParcelAutomatRepo.On("Create", ctx, city, address, numberOfCells, ipAddress, coordinates, 101, true).Return(automat, nil)
 
-	cellUUIDs := make([]uuid.UUID, numberOfCells)
 	for i := 0; i < numberOfCells; i++ {
-		cellUUIDs[i] = uuid.New()
 		mockLockerRepo.On("Create", ctx, automat.ID, 40.0, 40.0, 40.0).Return(&entity.LockerCell{
-			ID:     cellUUIDs[i],
+			ID:     uuid.New(),
 			PostID: automat.ID,
 			Height: 40.0,
 			Length: 40.0,
@@ -63,7 +62,15 @@ func TestParcelAutomatUseCase_Create_Success(t *testing.T) {
 		}, nil).Once()
 	}
 
-	mockOrangePIWebAPI.On("SendCellUUIDs", ctx, ipAddress, cellUUIDs).Return(nil).Once()
+	for i := 0; i < defaultInternalDoorCount; i++ {
+		mockInternalLockerRepo.On("Create", ctx, automat.ID, 0.0, 0.0, 0.0).Return(&entity.LockerCell{
+			ID:     uuid.New(),
+			PostID: automat.ID,
+			Status: "available",
+		}, nil).Once()
+	}
+
+	mockOrangePIWebAPI.On("SendCellUUIDs", ctx, ipAddress, automat.ID, mock.Anything, mock.Anything).Return(nil).Once()
 
 	result, err := uc.Create(ctx, city, address, ipAddress, coordinates, numberOfCells, 101, cells)
 
@@ -75,17 +82,20 @@ func TestParcelAutomatUseCase_Create_Success(t *testing.T) {
 	assert.True(t, result.IsWorking)
 	mockParcelAutomatRepo.AssertExpectations(t)
 	mockLockerRepo.AssertExpectations(t)
+	mockInternalLockerRepo.AssertExpectations(t)
+	mockOrangePIWebAPI.AssertExpectations(t)
 }
 
 func TestParcelAutomatUseCase_Create_Error(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	city := "Moscow"
@@ -114,12 +124,13 @@ func TestParcelAutomatUseCase_Create_Error(t *testing.T) {
 func TestParcelAutomatUseCase_Create_CustomCellDimensions(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	city := "Ekaterinburg"
@@ -153,6 +164,14 @@ func TestParcelAutomatUseCase_Create_CustomCellDimensions(t *testing.T) {
 		}, nil).Once()
 	}
 
+	for i := 0; i < defaultInternalDoorCount; i++ {
+		mockInternalLockerRepo.On("Create", ctx, automat.ID, 0.0, 0.0, 0.0).Return(&entity.LockerCell{
+			ID:     uuid.New(),
+			PostID: automat.ID,
+			Status: "available",
+		}, nil).Once()
+	}
+
 	result, err := uc.Create(ctx, city, address, "", "", numberOfCells, 42, cells)
 
 	assert.NoError(t, err)
@@ -163,17 +182,19 @@ func TestParcelAutomatUseCase_Create_CustomCellDimensions(t *testing.T) {
 	assert.True(t, result.IsWorking)
 	mockParcelAutomatRepo.AssertExpectations(t)
 	mockLockerRepo.AssertExpectations(t)
+	mockInternalLockerRepo.AssertExpectations(t)
 }
 
 func TestParcelAutomatUseCase_Create_ErrorCreatingCell(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	city := "Moscow"
@@ -208,12 +229,13 @@ func TestParcelAutomatUseCase_Create_ErrorCreatingCell(t *testing.T) {
 func TestParcelAutomatUseCase_GetByID_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -239,12 +261,13 @@ func TestParcelAutomatUseCase_GetByID_Success(t *testing.T) {
 func TestParcelAutomatUseCase_List_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 
@@ -266,12 +289,13 @@ func TestParcelAutomatUseCase_List_Success(t *testing.T) {
 func TestParcelAutomatUseCase_ListWorking_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 
@@ -293,12 +317,13 @@ func TestParcelAutomatUseCase_ListWorking_Success(t *testing.T) {
 func TestParcelAutomatUseCase_UpdateStatus_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -326,12 +351,13 @@ func TestParcelAutomatUseCase_UpdateStatus_Success(t *testing.T) {
 func TestParcelAutomatUseCase_Delete_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -347,12 +373,13 @@ func TestParcelAutomatUseCase_Delete_Success(t *testing.T) {
 func TestParcelAutomatUseCase_GetAutomatCells_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -380,9 +407,10 @@ func TestParcelAutomatUseCase_ProcessQRScan_Success(t *testing.T) {
 	mockQRGenerator := new(MockQRGenerator)
 	mockUserRepo := new(MockUserRepo)
 	mockMinioClient := new(MockMinioClient)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 
 	qrUseCase := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, qrUseCase, new(MockOrangePIWebAPI))
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, qrUseCase, new(MockOrangePIWebAPI))
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -444,9 +472,10 @@ func TestParcelAutomatUseCase_ProcessQRScan_InvalidQR(t *testing.T) {
 	mockQRGenerator := new(MockQRGenerator)
 	mockUserRepo := new(MockUserRepo)
 	mockMinioClient := new(MockMinioClient)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 
 	qrUseCase := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, qrUseCase, new(MockOrangePIWebAPI))
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, qrUseCase, new(MockOrangePIWebAPI))
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -464,12 +493,13 @@ func TestParcelAutomatUseCase_ProcessQRScan_InvalidQR(t *testing.T) {
 func TestParcelAutomatUseCase_ConfirmPickup_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	cellID := uuid.New()
@@ -491,12 +521,13 @@ func TestParcelAutomatUseCase_ConfirmPickup_Success(t *testing.T) {
 func TestParcelAutomatUseCase_ConfirmPickup_CellNotOpened(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	cellID := uuid.New()
@@ -517,12 +548,13 @@ func TestParcelAutomatUseCase_ConfirmPickup_CellNotOpened(t *testing.T) {
 func TestParcelAutomatUseCase_Update_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	automatID := uuid.New()
@@ -536,6 +568,9 @@ func TestParcelAutomatUseCase_Update_Success(t *testing.T) {
 	}
 
 	mockParcelAutomatRepo.On("Update", ctx, automatID, "Updated City", "Updated Address", "192.168.1.2", "55.7558,37.6173").Return(automat, nil)
+	mockLockerRepo.On("ListCellsByPostID", ctx, automatID).Return([]*entity.LockerCell{}, nil).Once()
+	mockInternalLockerRepo.On("ListCellsByPostID", ctx, automatID).Return([]*entity.LockerCell{}, nil).Once()
+	mockOrangePIWebAPI.On("SendCellUUIDs", ctx, "192.168.1.2", automatID, mock.Anything, mock.Anything).Return(nil).Once()
 
 	result, err := uc.Update(ctx, automatID, "Updated City", "Updated Address", "192.168.1.2", "55.7558,37.6173")
 
@@ -543,17 +578,21 @@ func TestParcelAutomatUseCase_Update_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, automatID, result.ID)
 	mockParcelAutomatRepo.AssertExpectations(t)
+	mockLockerRepo.AssertExpectations(t)
+	mockInternalLockerRepo.AssertExpectations(t)
+	mockOrangePIWebAPI.AssertExpectations(t)
 }
 
 func TestParcelAutomatUseCase_UpdateCell_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	cellID := uuid.New()
@@ -589,17 +628,19 @@ func TestParcelAutomatUseCase_UpdateCell_Success(t *testing.T) {
 func TestParcelAutomatUseCase_PrepareCell_Success(t *testing.T) {
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockQRUseCase := &QRUseCase{}
 	mockOrangePIWebAPI := new(MockOrangePIWebAPI)
 
-	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
+	uc := NewParcelAutomatUseCase(mockParcelAutomatRepo, mockLockerRepo, mockInternalLockerRepo, mockOrderRepo, mockDeliveryRepo, mockQRUseCase, mockOrangePIWebAPI)
 
 	ctx := context.Background()
 	orderID := uuid.New()
 	parcelAutomatID := uuid.New()
 	cellID := uuid.New()
+	internalDoorID := uuid.New()
 
 	order := &entity.Order{
 		ID:           orderID,
@@ -616,18 +657,30 @@ func TestParcelAutomatUseCase_PrepareCell_Success(t *testing.T) {
 		IPAddress: "192.168.1.1",
 	}
 
+	delivery := &entity.Delivery{
+		ID:                   uuid.New(),
+		OrderID:              orderID,
+		ParcelAutomatID:      parcelAutomatID,
+		InternalLockerCellID: &internalDoorID,
+	}
+
 	mockOrderRepo.On("GetByID", ctx, orderID).Return(order, nil)
 	mockLockerRepo.On("GetCellByID", ctx, cellID).Return(cell, nil)
 	mockParcelAutomatRepo.On("GetByID", ctx, parcelAutomatID).Return(automat, nil)
-	mockOrangePIWebAPI.On("OpenCell", ctx, "192.168.1.1", cellID).Return(nil)
-	mockLockerRepo.On("UpdateCellStatus", ctx, cellID, "opened").Return(nil)
+	mockDeliveryRepo.On("GetByOrderID", ctx, orderID).Return(delivery, nil)
+	mockOrangePIWebAPI.On("OpenCell", ctx, "192.168.1.1", internalDoorID).Return(nil)
+	mockInternalLockerRepo.On("UpdateCellStatus", ctx, internalDoorID, "opened").Return(nil)
 
-	result, err := uc.PrepareCell(ctx, orderID, parcelAutomatID)
+	result, internalResult, err := uc.PrepareCell(ctx, orderID, parcelAutomatID)
 
 	assert.NoError(t, err)
 	assert.Equal(t, cellID, result)
+	assert.NotNil(t, internalResult)
+	assert.Equal(t, internalDoorID, *internalResult)
 	mockOrderRepo.AssertExpectations(t)
 	mockLockerRepo.AssertExpectations(t)
+	mockInternalLockerRepo.AssertExpectations(t)
 	mockParcelAutomatRepo.AssertExpectations(t)
+	mockDeliveryRepo.AssertExpectations(t)
 	mockOrangePIWebAPI.AssertExpectations(t)
 }

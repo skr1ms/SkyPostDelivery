@@ -13,16 +13,17 @@ import (
 )
 
 const createDelivery = `-- name: CreateDelivery :one
-INSERT INTO deliveries (order_id, drone_id, parcel_automat_id, status)
-VALUES ($1, $2, $3, $4)
-RETURNING id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at
+INSERT INTO deliveries (order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at
 `
 
 type CreateDeliveryParams struct {
-	OrderID         uuid.UUID   `json:"order_id"`
-	DroneID         pgtype.UUID `json:"drone_id"`
-	ParcelAutomatID uuid.UUID   `json:"parcel_automat_id"`
-	Status          string      `json:"status"`
+	OrderID              uuid.UUID   `json:"order_id"`
+	DroneID              pgtype.UUID `json:"drone_id"`
+	ParcelAutomatID      uuid.UUID   `json:"parcel_automat_id"`
+	InternalLockerCellID pgtype.UUID `json:"internal_locker_cell_id"`
+	Status               string      `json:"status"`
 }
 
 func (q *Queries) CreateDelivery(ctx context.Context, arg CreateDeliveryParams) (Delivery, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateDelivery(ctx context.Context, arg CreateDeliveryParams) 
 		arg.OrderID,
 		arg.DroneID,
 		arg.ParcelAutomatID,
+		arg.InternalLockerCellID,
 		arg.Status,
 	)
 	var i Delivery
@@ -38,6 +40,7 @@ func (q *Queries) CreateDelivery(ctx context.Context, arg CreateDeliveryParams) 
 		&i.OrderID,
 		&i.DroneID,
 		&i.ParcelAutomatID,
+		&i.InternalLockerCellID,
 		&i.Status,
 		&i.StartedAt,
 		&i.CompletedAt,
@@ -56,7 +59,7 @@ func (q *Queries) DeleteDelivery(ctx context.Context, id uuid.UUID) error {
 }
 
 const getDeliveryByID = `-- name: GetDeliveryByID :one
-SELECT id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at FROM deliveries
+SELECT id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at FROM deliveries
 WHERE id = $1
 `
 
@@ -68,6 +71,7 @@ func (q *Queries) GetDeliveryByID(ctx context.Context, id uuid.UUID) (Delivery, 
 		&i.OrderID,
 		&i.DroneID,
 		&i.ParcelAutomatID,
+		&i.InternalLockerCellID,
 		&i.Status,
 		&i.StartedAt,
 		&i.CompletedAt,
@@ -76,7 +80,7 @@ func (q *Queries) GetDeliveryByID(ctx context.Context, id uuid.UUID) (Delivery, 
 }
 
 const getDeliveryByOrderID = `-- name: GetDeliveryByOrderID :one
-SELECT id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at FROM deliveries
+SELECT id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at FROM deliveries
 WHERE order_id = $1
 `
 
@@ -88,6 +92,7 @@ func (q *Queries) GetDeliveryByOrderID(ctx context.Context, orderID uuid.UUID) (
 		&i.OrderID,
 		&i.DroneID,
 		&i.ParcelAutomatID,
+		&i.InternalLockerCellID,
 		&i.Status,
 		&i.StartedAt,
 		&i.CompletedAt,
@@ -96,7 +101,7 @@ func (q *Queries) GetDeliveryByOrderID(ctx context.Context, orderID uuid.UUID) (
 }
 
 const listDeliveries = `-- name: ListDeliveries :many
-SELECT id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at FROM deliveries
+SELECT id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at FROM deliveries
 ORDER BY id DESC
 `
 
@@ -114,6 +119,7 @@ func (q *Queries) ListDeliveries(ctx context.Context) ([]Delivery, error) {
 			&i.OrderID,
 			&i.DroneID,
 			&i.ParcelAutomatID,
+			&i.InternalLockerCellID,
 			&i.Status,
 			&i.StartedAt,
 			&i.CompletedAt,
@@ -129,7 +135,7 @@ func (q *Queries) ListDeliveries(ctx context.Context) ([]Delivery, error) {
 }
 
 const listDeliveriesByStatus = `-- name: ListDeliveriesByStatus :many
-SELECT id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at FROM deliveries
+SELECT id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at FROM deliveries
 WHERE status = $1
 ORDER BY id DESC
 `
@@ -148,6 +154,7 @@ func (q *Queries) ListDeliveriesByStatus(ctx context.Context, status string) ([]
 			&i.OrderID,
 			&i.DroneID,
 			&i.ParcelAutomatID,
+			&i.InternalLockerCellID,
 			&i.Status,
 			&i.StartedAt,
 			&i.CompletedAt,
@@ -166,7 +173,7 @@ const updateDeliveryDrone = `-- name: UpdateDeliveryDrone :one
 UPDATE deliveries
 SET drone_id = $2
 WHERE id = $1
-RETURNING id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at
+RETURNING id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at
 `
 
 type UpdateDeliveryDroneParams struct {
@@ -182,6 +189,7 @@ func (q *Queries) UpdateDeliveryDrone(ctx context.Context, arg UpdateDeliveryDro
 		&i.OrderID,
 		&i.DroneID,
 		&i.ParcelAutomatID,
+		&i.InternalLockerCellID,
 		&i.Status,
 		&i.StartedAt,
 		&i.CompletedAt,
@@ -193,7 +201,7 @@ const updateDeliveryStatus = `-- name: UpdateDeliveryStatus :one
 UPDATE deliveries
 SET status = $2
 WHERE id = $1
-RETURNING id, order_id, drone_id, parcel_automat_id, status, started_at, completed_at
+RETURNING id, order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status, started_at, completed_at
 `
 
 type UpdateDeliveryStatusParams struct {
@@ -209,6 +217,7 @@ func (q *Queries) UpdateDeliveryStatus(ctx context.Context, arg UpdateDeliverySt
 		&i.OrderID,
 		&i.DroneID,
 		&i.ParcelAutomatID,
+		&i.InternalLockerCellID,
 		&i.Status,
 		&i.StartedAt,
 		&i.CompletedAt,

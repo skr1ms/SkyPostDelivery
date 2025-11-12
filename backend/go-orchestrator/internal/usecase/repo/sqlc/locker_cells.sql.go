@@ -12,28 +12,30 @@ import (
 )
 
 const createLockerCell = `-- name: CreateLockerCell :one
-INSERT INTO locker_cells (post_id, height, length, width, status)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, post_id, height, length, width, status
+INSERT INTO locker_cells_out (post_id, height, length, width, status, cell_number)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, post_id, height, length, width, status, cell_number
 `
 
 type CreateLockerCellParams struct {
-	PostID uuid.UUID `json:"post_id"`
-	Height float64   `json:"height"`
-	Length float64   `json:"length"`
-	Width  float64   `json:"width"`
-	Status string    `json:"status"`
+	PostID     uuid.UUID `json:"post_id"`
+	Height     float64   `json:"height"`
+	Length     float64   `json:"length"`
+	Width      float64   `json:"width"`
+	Status     string    `json:"status"`
+	CellNumber *int32    `json:"cell_number"`
 }
 
-func (q *Queries) CreateLockerCell(ctx context.Context, arg CreateLockerCellParams) (LockerCell, error) {
+func (q *Queries) CreateLockerCell(ctx context.Context, arg CreateLockerCellParams) (LockerCellsOut, error) {
 	row := q.db.QueryRow(ctx, createLockerCell,
 		arg.PostID,
 		arg.Height,
 		arg.Length,
 		arg.Width,
 		arg.Status,
+		arg.CellNumber,
 	)
-	var i LockerCell
+	var i LockerCellsOut
 	err := row.Scan(
 		&i.ID,
 		&i.PostID,
@@ -41,12 +43,13 @@ func (q *Queries) CreateLockerCell(ctx context.Context, arg CreateLockerCellPara
 		&i.Length,
 		&i.Width,
 		&i.Status,
+		&i.CellNumber,
 	)
 	return i, err
 }
 
 const deleteLockerCell = `-- name: DeleteLockerCell :exec
-DELETE FROM locker_cells
+DELETE FROM locker_cells_out
 WHERE id = $1
 `
 
@@ -56,7 +59,7 @@ func (q *Queries) DeleteLockerCell(ctx context.Context, id uuid.UUID) error {
 }
 
 const findAvailableCell = `-- name: FindAvailableCell :one
-SELECT id, post_id, height, length, width, status FROM locker_cells
+SELECT id, post_id, height, length, width, status, cell_number FROM locker_cells_out
 WHERE status = 'available'
   AND height >= $1
   AND length >= $2
@@ -71,9 +74,9 @@ type FindAvailableCellParams struct {
 	Width  float64 `json:"width"`
 }
 
-func (q *Queries) FindAvailableCell(ctx context.Context, arg FindAvailableCellParams) (LockerCell, error) {
+func (q *Queries) FindAvailableCell(ctx context.Context, arg FindAvailableCellParams) (LockerCellsOut, error) {
 	row := q.db.QueryRow(ctx, findAvailableCell, arg.Height, arg.Length, arg.Width)
-	var i LockerCell
+	var i LockerCellsOut
 	err := row.Scan(
 		&i.ID,
 		&i.PostID,
@@ -81,18 +84,19 @@ func (q *Queries) FindAvailableCell(ctx context.Context, arg FindAvailableCellPa
 		&i.Length,
 		&i.Width,
 		&i.Status,
+		&i.CellNumber,
 	)
 	return i, err
 }
 
 const getLockerCellByID = `-- name: GetLockerCellByID :one
-SELECT id, post_id, height, length, width, status FROM locker_cells
+SELECT id, post_id, height, length, width, status, cell_number FROM locker_cells_out
 WHERE id = $1
 `
 
-func (q *Queries) GetLockerCellByID(ctx context.Context, id uuid.UUID) (LockerCell, error) {
+func (q *Queries) GetLockerCellByID(ctx context.Context, id uuid.UUID) (LockerCellsOut, error) {
 	row := q.db.QueryRow(ctx, getLockerCellByID, id)
-	var i LockerCell
+	var i LockerCellsOut
 	err := row.Scan(
 		&i.ID,
 		&i.PostID,
@@ -100,24 +104,25 @@ func (q *Queries) GetLockerCellByID(ctx context.Context, id uuid.UUID) (LockerCe
 		&i.Length,
 		&i.Width,
 		&i.Status,
+		&i.CellNumber,
 	)
 	return i, err
 }
 
 const listLockerCells = `-- name: ListLockerCells :many
-SELECT id, post_id, height, length, width, status FROM locker_cells
+SELECT id, post_id, height, length, width, status, cell_number FROM locker_cells_out
 ORDER BY id
 `
 
-func (q *Queries) ListLockerCells(ctx context.Context) ([]LockerCell, error) {
+func (q *Queries) ListLockerCells(ctx context.Context) ([]LockerCellsOut, error) {
 	rows, err := q.db.Query(ctx, listLockerCells)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LockerCell
+	var items []LockerCellsOut
 	for rows.Next() {
-		var i LockerCell
+		var i LockerCellsOut
 		if err := rows.Scan(
 			&i.ID,
 			&i.PostID,
@@ -125,6 +130,7 @@ func (q *Queries) ListLockerCells(ctx context.Context) ([]LockerCell, error) {
 			&i.Length,
 			&i.Width,
 			&i.Status,
+			&i.CellNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -137,20 +143,20 @@ func (q *Queries) ListLockerCells(ctx context.Context) ([]LockerCell, error) {
 }
 
 const listLockerCellsByPostID = `-- name: ListLockerCellsByPostID :many
-SELECT id, post_id, height, length, width, status FROM locker_cells
+SELECT id, post_id, height, length, width, status, cell_number FROM locker_cells_out
 WHERE post_id = $1
-ORDER BY id
+ORDER BY cell_number
 `
 
-func (q *Queries) ListLockerCellsByPostID(ctx context.Context, postID uuid.UUID) ([]LockerCell, error) {
+func (q *Queries) ListLockerCellsByPostID(ctx context.Context, postID uuid.UUID) ([]LockerCellsOut, error) {
 	rows, err := q.db.Query(ctx, listLockerCellsByPostID, postID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LockerCell
+	var items []LockerCellsOut
 	for rows.Next() {
-		var i LockerCell
+		var i LockerCellsOut
 		if err := rows.Scan(
 			&i.ID,
 			&i.PostID,
@@ -158,6 +164,7 @@ func (q *Queries) ListLockerCellsByPostID(ctx context.Context, postID uuid.UUID)
 			&i.Length,
 			&i.Width,
 			&i.Status,
+			&i.CellNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -170,10 +177,10 @@ func (q *Queries) ListLockerCellsByPostID(ctx context.Context, postID uuid.UUID)
 }
 
 const updateLockerCellDimensions = `-- name: UpdateLockerCellDimensions :one
-UPDATE locker_cells
+UPDATE locker_cells_out
 SET height = $2, length = $3, width = $4
 WHERE id = $1
-RETURNING id, post_id, height, length, width, status
+RETURNING id, post_id, height, length, width, status, cell_number
 `
 
 type UpdateLockerCellDimensionsParams struct {
@@ -183,14 +190,14 @@ type UpdateLockerCellDimensionsParams struct {
 	Width  float64   `json:"width"`
 }
 
-func (q *Queries) UpdateLockerCellDimensions(ctx context.Context, arg UpdateLockerCellDimensionsParams) (LockerCell, error) {
+func (q *Queries) UpdateLockerCellDimensions(ctx context.Context, arg UpdateLockerCellDimensionsParams) (LockerCellsOut, error) {
 	row := q.db.QueryRow(ctx, updateLockerCellDimensions,
 		arg.ID,
 		arg.Height,
 		arg.Length,
 		arg.Width,
 	)
-	var i LockerCell
+	var i LockerCellsOut
 	err := row.Scan(
 		&i.ID,
 		&i.PostID,
@@ -198,15 +205,16 @@ func (q *Queries) UpdateLockerCellDimensions(ctx context.Context, arg UpdateLock
 		&i.Length,
 		&i.Width,
 		&i.Status,
+		&i.CellNumber,
 	)
 	return i, err
 }
 
 const updateLockerCellStatus = `-- name: UpdateLockerCellStatus :one
-UPDATE locker_cells
+UPDATE locker_cells_out
 SET status = $2
 WHERE id = $1
-RETURNING id, post_id, height, length, width, status
+RETURNING id, post_id, height, length, width, status, cell_number
 `
 
 type UpdateLockerCellStatusParams struct {
@@ -214,9 +222,9 @@ type UpdateLockerCellStatusParams struct {
 	Status string    `json:"status"`
 }
 
-func (q *Queries) UpdateLockerCellStatus(ctx context.Context, arg UpdateLockerCellStatusParams) (LockerCell, error) {
+func (q *Queries) UpdateLockerCellStatus(ctx context.Context, arg UpdateLockerCellStatusParams) (LockerCellsOut, error) {
 	row := q.db.QueryRow(ctx, updateLockerCellStatus, arg.ID, arg.Status)
-	var i LockerCell
+	var i LockerCellsOut
 	err := row.Scan(
 		&i.ID,
 		&i.PostID,
@@ -224,6 +232,7 @@ func (q *Queries) UpdateLockerCellStatus(ctx context.Context, arg UpdateLockerCe
 		&i.Length,
 		&i.Width,
 		&i.Status,
+		&i.CellNumber,
 	)
 	return i, err
 }

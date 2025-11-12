@@ -14,6 +14,7 @@ type DeliveryUseCase struct {
 	deliveryRepo   DeliveryRepo
 	orderRepo      OrderRepo
 	lockerRepo     LockerRepo
+	internalLocker InternalLockerRepo
 	rabbitmqClient RabbitMQClient
 	notifier       DeliveryNotifier
 }
@@ -22,6 +23,7 @@ func NewDeliveryUseCase(
 	deliveryRepo DeliveryRepo,
 	orderRepo OrderRepo,
 	lockerRepo LockerRepo,
+	internalLocker InternalLockerRepo,
 	rabbitmqClient RabbitMQClient,
 	notifier DeliveryNotifier,
 ) *DeliveryUseCase {
@@ -29,6 +31,7 @@ func NewDeliveryUseCase(
 		deliveryRepo:   deliveryRepo,
 		orderRepo:      orderRepo,
 		lockerRepo:     lockerRepo,
+		internalLocker: internalLocker,
 		rabbitmqClient: rabbitmqClient,
 		notifier:       notifier,
 	}
@@ -117,6 +120,12 @@ func (uc *DeliveryUseCase) ConfirmGoodsLoaded(ctx context.Context, orderID, lock
 	if order.LockerCellID != nil {
 		if err := uc.lockerRepo.UpdateCellStatus(ctx, *order.LockerCellID, "occupied"); err != nil {
 			return fmt.Errorf("delivery usecase - ConfirmGoodsLoaded - lockerRepo.UpdateCellStatus: %w", err)
+		}
+	}
+
+	if delivery.InternalLockerCellID != nil && uc.internalLocker != nil {
+		if err := uc.internalLocker.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "occupied"); err != nil {
+			fmt.Printf("delivery usecase - ConfirmGoodsLoaded - internalLocker.UpdateCellStatus: %v\n", err)
 		}
 	}
 

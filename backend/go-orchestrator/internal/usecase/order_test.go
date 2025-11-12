@@ -17,6 +17,7 @@ func TestOrderUseCase_CreateOrder_GoodNotFound(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -26,6 +27,7 @@ func TestOrderUseCase_CreateOrder_GoodNotFound(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -59,6 +61,7 @@ func TestOrderUseCase_GetOrder_Success(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		nil,
 		mockRabbitMQClient,
 	)
 
@@ -87,6 +90,7 @@ func TestOrderUseCase_GetUserOrders_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -96,6 +100,7 @@ func TestOrderUseCase_GetUserOrders_Success(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -124,6 +129,7 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -133,6 +139,7 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Success(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -202,6 +209,7 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Error(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -211,6 +219,7 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Error(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 
@@ -234,6 +243,7 @@ func TestOrderUseCase_CreateMultipleOrders_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
@@ -243,6 +253,7 @@ func TestOrderUseCase_CreateMultipleOrders_Success(t *testing.T) {
 		mockDeliveryRepo,
 		mockParcelAutomatRepo,
 		mockLockerRepo,
+		mockInternalLockerRepo,
 		mockRabbitMQClient,
 	)
 

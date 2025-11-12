@@ -39,7 +39,7 @@ func (s *OrchestratorServer) RequestCellOpen(ctx context.Context, req *pb.CellOp
 		}, nil
 	}
 
-	cellID, err := s.parcelAutomatUseCase.PrepareCell(ctx, orderID, parcelAutomatID)
+	cellID, internalDoorID, err := s.parcelAutomatUseCase.PrepareCell(ctx, orderID, parcelAutomatID)
 	if err != nil {
 		return &pb.CellOpenResponse{
 			Success: false,
@@ -51,5 +51,11 @@ func (s *OrchestratorServer) RequestCellOpen(ctx context.Context, req *pb.CellOp
 		Success: true,
 		Message: "Cell opened successfully",
 		CellId:  cellID.String(),
+		InternalCellId: func() string {
+			if internalDoorID == nil {
+				return ""
+			}
+			return internalDoorID.String()
+		}(),
 	}, nil
 }

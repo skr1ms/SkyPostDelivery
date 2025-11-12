@@ -72,6 +72,18 @@ type (
 
 	LockerRepo interface {
 		Create(ctx context.Context, postID uuid.UUID, height, length, width float64) (*entity.LockerCell, error)
+		CreateWithNumber(ctx context.Context, postID uuid.UUID, height, length, width float64, cellNumber int) (*entity.LockerCell, error)
+		CreateCell(ctx context.Context, postID uuid.UUID, height, length, width float64, status string) (*entity.LockerCell, error)
+		GetCellByID(ctx context.Context, id uuid.UUID) (*entity.LockerCell, error)
+		FindAvailableCell(ctx context.Context, height, length, width float64) (*entity.LockerCell, error)
+		UpdateCellStatus(ctx context.Context, id uuid.UUID, status string) error
+		UpdateDimensions(ctx context.Context, id uuid.UUID, height, length, width float64) (*entity.LockerCell, error)
+		ListCellsByPostID(ctx context.Context, postID uuid.UUID) ([]*entity.LockerCell, error)
+	}
+
+	InternalLockerRepo interface {
+		Create(ctx context.Context, postID uuid.UUID, height, length, width float64) (*entity.LockerCell, error)
+		CreateWithNumber(ctx context.Context, postID uuid.UUID, height, length, width float64, cellNumber int) (*entity.LockerCell, error)
 		CreateCell(ctx context.Context, postID uuid.UUID, height, length, width float64, status string) (*entity.LockerCell, error)
 		GetCellByID(ctx context.Context, id uuid.UUID) (*entity.LockerCell, error)
 		FindAvailableCell(ctx context.Context, height, length, width float64) (*entity.LockerCell, error)
@@ -91,7 +103,7 @@ type (
 	}
 
 	DeliveryRepo interface {
-		Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, status string) (*entity.Delivery, error)
+		Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, internalLockerCellID *uuid.UUID, status string) (*entity.Delivery, error)
 		GetByID(ctx context.Context, id uuid.UUID) (*entity.Delivery, error)
 		GetByOrderID(ctx context.Context, orderID uuid.UUID) (*entity.Delivery, error)
 		UpdateStatus(ctx context.Context, id uuid.UUID, status string) (*entity.Delivery, error)
@@ -118,7 +130,7 @@ type (
 	}
 
 	OrangePIWebAPI interface {
-		SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, cellUUIDs []uuid.UUID) error
+		SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, outCellUUIDs []uuid.UUID, internalCellUUIDs []uuid.UUID) error
 		OpenCell(ctx context.Context, ipAddress string, cellID uuid.UUID) error
 	}
 

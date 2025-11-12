@@ -17,5 +17,6 @@ message CellOpenResponse {
   bool success = 1;
   string message = 2;
   string cell_id = 3;
+  string internal_cell_id = 4;
 }
 

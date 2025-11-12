@@ -7,7 +7,7 @@ from ..models.schemas import (
     CellMappingResponse,
     CellUUIDResponse,
     OpenCellResponse,
-    PrepareCellRequest
+    PrepareCellRequest,
 )
 from ..services.cell_management_service import CellManagementService
 
@@ -30,12 +30,21 @@ async def sync_cells(payload: CellsPayload, service: CellManagementService = Dep
                 detail="parcel_automat_id is required in request body"
             )
 
-        mapping = service.sync_cells(payload.cells, payload.parcel_automat_id)
+        sync_result = service.sync_cells(
+            cells_out=payload.cells_out,
+            cells_internal=payload.cells_internal,
+            parcel_automat_id=payload.parcel_automat_id,
+        )
+        external_mapping = sync_result.get("external", {})
+        internal_mapping = sync_result.get("internal", {})
+
         logger.info(f"Cells synced for automat {payload.parcel_automat_id}")
         return {
             "message": "Cells synchronized successfully",
-            "cells_count": len(mapping),
-            "mapping": mapping
+            "cells_count": len(external_mapping),
+            "mapping": external_mapping,
+            "internal_cells_count": len(internal_mapping),
+            "internal_mapping": internal_mapping,
         }
     except Exception as e:
         logger.error(f"Failed to sync cells: {e}")
@@ -49,9 +58,12 @@ async def sync_cells(payload: CellsPayload, service: CellManagementService = Dep
 async def get_cells_mapping(service: CellManagementService = Depends(get_cell_service)) -> CellMappingResponse:
     try:
         mapping = service.get_mapping()
+        internal_mapping = service.get_internal_mapping()
         return CellMappingResponse(
             mapping=mapping,
-            cells_count=len(mapping)
+            cells_count=len(mapping),
+            internal_mapping=internal_mapping,
+            internal_cells_count=len(internal_mapping),
         )
     except Exception as e:
         logger.error(f"Failed to get cells mapping: {e}")
@@ -145,9 +157,12 @@ async def get_cell_status(cell_number: int, service: CellManagementService = Dep
 async def get_cells_count(service: CellManagementService = Depends(get_cell_service)) -> Dict:
     try:
         count = service.arduino.get_cells_count()
+        internal_count = service.arduino.get_internal_cells_count()
         return {
             "cells_count": count,
-            "mapped_cells": len(service.get_mapping())
+            "mapped_cells": len(service.get_mapping()),
+            "internal_cells_count": internal_count,
+            "mapped_internal_cells": len(service.get_internal_mapping()),
         }
     except Exception as e:
         logger.error(f"Failed to get cells count: {e}")
@@ -160,25 +175,27 @@ async def get_cells_count(service: CellManagementService = Depends(get_cell_serv
 @router.post("/prepare")
 async def prepare_cell(request: PrepareCellRequest, service: CellManagementService = Depends(get_cell_service)) -> Dict:
     try:
-        cell_num = service.get_cell_number(request.cell_id)
-        if cell_num is None:
+        results = service.open_cells_by_uuids([request.cell_id])
+        if not results:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Cell {request.cell_id} not found"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No response from cell service"
             )
 
-        result = await service.open_cells_by_uuids([request.cell_id])
+        result = results[0]
 
-        if result["success"]:
+        if result.get("success"):
             return {
                 "success": True,
                 "message": "Cell opened successfully",
-                "cell_number": cell_num
+                "cell_number": result.get("cell_number") or result.get("door_number"),
+                "cell_uuid": result.get("cell_uuid"),
+                "type": result.get("type", "external")
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to open cell: {result.get('message', 'Unknown error')}"
+                detail=f"Failed to open cell: {result.get('error', 'Unknown error')}"
             )
     except HTTPException:
         raise

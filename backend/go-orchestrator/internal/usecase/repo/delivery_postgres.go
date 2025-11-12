@@ -37,20 +37,22 @@ func ptrUUIDToPgUUID(pu *uuid.UUID) pgtype.UUID {
 
 func toEntityDelivery(d sqlc.Delivery) *entity.Delivery {
 	return &entity.Delivery{
-		ID:              d.ID,
-		OrderID:         d.OrderID,
-		DroneID:         pgUUIDToPtrUUID(d.DroneID),
-		ParcelAutomatID: d.ParcelAutomatID,
-		Status:          d.Status,
+		ID:                   d.ID,
+		OrderID:              d.OrderID,
+		DroneID:              pgUUIDToPtrUUID(d.DroneID),
+		ParcelAutomatID:      d.ParcelAutomatID,
+		InternalLockerCellID: pgUUIDToPtrUUID(d.InternalLockerCellID),
+		Status:               d.Status,
 	}
 }
 
-func (r *DeliveryRepo) Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, status string) (*entity.Delivery, error) {
+func (r *DeliveryRepo) Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, internalLockerCellID *uuid.UUID, status string) (*entity.Delivery, error) {
 	d, err := r.q.CreateDelivery(ctx, sqlc.CreateDeliveryParams{
-		OrderID:         orderID,
-		DroneID:         ptrUUIDToPgUUID(droneID),
-		ParcelAutomatID: parcelAutomatID,
-		Status:          status,
+		OrderID:              orderID,
+		DroneID:              ptrUUIDToPgUUID(droneID),
+		ParcelAutomatID:      parcelAutomatID,
+		InternalLockerCellID: ptrUUIDToPgUUID(internalLockerCellID),
+		Status:               status,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("DeliveryRepo - Create - q.CreateDelivery: %w", err)

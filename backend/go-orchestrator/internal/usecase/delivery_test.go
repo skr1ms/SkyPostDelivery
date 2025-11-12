@@ -15,7 +15,8 @@ func TestDeliveryUseCase_GetDelivery_Success(t *testing.T) {
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	deliveryID := uuid.New()
@@ -40,7 +41,8 @@ func TestDeliveryUseCase_GetDelivery_NotFound(t *testing.T) {
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	deliveryID := uuid.New()
@@ -59,8 +61,9 @@ func TestDeliveryUseCase_UpdateStatus_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	deliveryID := uuid.New()
@@ -92,7 +95,8 @@ func TestDeliveryUseCase_UpdateStatus_Delivered(t *testing.T) {
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	deliveryID := uuid.New()
@@ -124,8 +128,9 @@ func TestDeliveryUseCase_ListByStatus_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	status := "pending"
@@ -149,19 +154,22 @@ func TestDeliveryUseCase_ConfirmGoodsLoaded_Success(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	orderID := uuid.New()
 	lockerCellID := uuid.New()
 	deliveryID := uuid.New()
 
+	internalCellID := uuid.New()
 	delivery := &entity.Delivery{
-		ID:              deliveryID,
-		OrderID:         orderID,
-		ParcelAutomatID: uuid.New(),
-		Status:          "in_transit",
+		ID:                   deliveryID,
+		OrderID:              orderID,
+		ParcelAutomatID:      uuid.New(),
+		InternalLockerCellID: &internalCellID,
+		Status:               "in_transit",
 	}
 
 	updatedDelivery := &entity.Delivery{
@@ -182,6 +190,7 @@ func TestDeliveryUseCase_ConfirmGoodsLoaded_Success(t *testing.T) {
 	mockOrderRepo.On("GetByID", ctx, orderID).Return(order, nil)
 	mockOrderRepo.On("UpdateStatus", ctx, orderID, "delivered").Return(order, nil)
 	mockLockerRepo.On("UpdateCellStatus", ctx, lockerCellID, "occupied").Return(nil)
+	mockInternalLockerRepo.On("UpdateCellStatus", ctx, internalCellID, "available").Return(nil)
 
 	err := uc.ConfirmGoodsLoaded(ctx, orderID, lockerCellID)
 
@@ -195,8 +204,9 @@ func TestDeliveryUseCase_ConfirmGoodsLoaded_DeliveryNotFound(t *testing.T) {
 	mockDeliveryRepo := new(MockDeliveryRepo)
 	mockOrderRepo := new(MockOrderRepo)
 	mockLockerRepo := new(MockLockerRepo)
+	mockInternalLockerRepo := new(MockInternalLockerRepo)
 	mockRabbitMQClient := new(MockRabbitMQClient)
-	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockRabbitMQClient, nil)
+	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
 	orderID := uuid.New()

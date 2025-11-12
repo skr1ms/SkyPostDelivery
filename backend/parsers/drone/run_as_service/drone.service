@@ -1,7 +1,8 @@
 [Unit]
-Description=Drone Parser ROS Bridge
-After=network-online.target
+Description=Drone Parser ROS Bridge Service
+After=network-online.target roscore.service
 Wants=network-online.target
+Requires=roscore.service
 
 [Service]
 Type=simple
@@ -9,13 +10,18 @@ User=__USER__
 Group=__USER__
 WorkingDirectory=__WORKING_DIR__
 Environment="PYTHONUNBUFFERED=1"
+Environment="ROS_MASTER_URI=http://localhost:11311"
+Environment="ROS_HOSTNAME=localhost"
 EnvironmentFile=__WORKING_DIR__/.env
-ExecStart=/bin/bash -lc '__WORKING_DIR__/start_drone.sh'
+ExecStartPre=/bin/sleep 5
+ExecStart=/bin/bash -lc 'source /opt/ros/noetic/setup.bash && cd __WORKING_DIR__ && python3 main.py'
 Restart=always
-RestartSec=5
+RestartSec=10
 StandardOutput=journal
 StandardError=journal
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target
-

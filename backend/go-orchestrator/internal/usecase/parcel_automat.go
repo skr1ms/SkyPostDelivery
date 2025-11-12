@@ -10,31 +10,36 @@ import (
 )
 
 type ParcelAutomatUseCase struct {
-	parcelAutomatRepo ParcelAutomatRepo
-	lockerRepo        LockerRepo
-	orderRepo         OrderRepo
-	deliveryRepo      DeliveryRepo
-	qrUseCase         *QRUseCase
-	orangePIWebAPI    OrangePIWebAPI
+	parcelAutomatRepo  ParcelAutomatRepo
+	lockerRepo         LockerRepo
+	internalLockerRepo InternalLockerRepo
+	orderRepo          OrderRepo
+	deliveryRepo       DeliveryRepo
+	qrUseCase          *QRUseCase
+	orangePIWebAPI     OrangePIWebAPI
 }
 
 func NewParcelAutomatUseCase(
 	parcelAutomatRepo ParcelAutomatRepo,
 	lockerRepo LockerRepo,
+	internalLockerRepo InternalLockerRepo,
 	orderRepo OrderRepo,
 	deliveryRepo DeliveryRepo,
 	qrUseCase *QRUseCase,
 	orangePIWebAPI OrangePIWebAPI,
 ) *ParcelAutomatUseCase {
 	return &ParcelAutomatUseCase{
-		parcelAutomatRepo: parcelAutomatRepo,
-		lockerRepo:        lockerRepo,
-		orderRepo:         orderRepo,
-		deliveryRepo:      deliveryRepo,
-		qrUseCase:         qrUseCase,
-		orangePIWebAPI:    orangePIWebAPI,
+		parcelAutomatRepo:  parcelAutomatRepo,
+		lockerRepo:         lockerRepo,
+		internalLockerRepo: internalLockerRepo,
+		orderRepo:          orderRepo,
+		deliveryRepo:       deliveryRepo,
+		qrUseCase:          qrUseCase,
+		orangePIWebAPI:     orangePIWebAPI,
 	}
 }
+
+const defaultInternalDoorCount = 3
 
 func (uc *ParcelAutomatUseCase) Create(ctx context.Context, city, address, ipAddress, coordinates string, numberOfCells int, arucoID int, cells []request.CellDimensions) (*entity.ParcelAutomat, error) {
 	automat, err := uc.parcelAutomatRepo.Create(ctx, city, address, numberOfCells, ipAddress, coordinates, arucoID, true)
@@ -43,16 +48,25 @@ func (uc *ParcelAutomatUseCase) Create(ctx context.Context, city, address, ipAdd
 	}
 
 	cellUUIDs := make([]uuid.UUID, 0, len(cells))
-	for _, cell := range cells {
-		createdCell, err := uc.lockerRepo.Create(ctx, automat.ID, cell.Height, cell.Length, cell.Width)
+	for i, cell := range cells {
+		createdCell, err := uc.lockerRepo.CreateWithNumber(ctx, automat.ID, cell.Height, cell.Length, cell.Width, i+1)
 		if err != nil {
-			return nil, fmt.Errorf("parcel automat usecase - Create - lockerRepo.Create: %w", err)
+			return nil, fmt.Errorf("parcel automat usecase - Create - lockerRepo.CreateWithNumber: %w", err)
 		}
 		cellUUIDs = append(cellUUIDs, createdCell.ID)
 	}
 
+	internalCellUUIDs := make([]uuid.UUID, 0, defaultInternalDoorCount)
+	for i := 0; i < defaultInternalDoorCount; i++ {
+		createdCell, err := uc.internalLockerRepo.CreateWithNumber(ctx, automat.ID, 0, 0, 0, i+1)
+		if err != nil {
+			return nil, fmt.Errorf("parcel automat usecase - Create - internalLockerRepo.CreateWithNumber: %w", err)
+		}
+		internalCellUUIDs = append(internalCellUUIDs, createdCell.ID)
+	}
+
 	if ipAddress != "" {
-		if err := uc.orangePIWebAPI.SendCellUUIDs(ctx, ipAddress, automat.ID, cellUUIDs); err != nil {
+		if err := uc.orangePIWebAPI.SendCellUUIDs(ctx, ipAddress, automat.ID, cellUUIDs, internalCellUUIDs); err != nil {
 			fmt.Printf("Warning: Failed to send cell UUIDs to OrangePI at %s: %v\n", ipAddress, err)
 		}
 	}
@@ -100,17 +114,27 @@ func (uc *ParcelAutomatUseCase) Update(ctx context.Context, id uuid.UUID, city, 
 	}
 
 	if ipAddress != "" {
-		cells, err := uc.lockerRepo.ListCellsByPostID(ctx, automat.ID)
+		outCells, err := uc.lockerRepo.ListCellsByPostID(ctx, automat.ID)
 		if err != nil {
 			fmt.Printf("Warning: Failed to get cells for automat %s: %v\n", automat.ID, err)
 		} else {
-			cellUUIDs := make([]uuid.UUID, 0, len(cells))
-			for _, cell := range cells {
-				cellUUIDs = append(cellUUIDs, cell.ID)
-			}
+			internalCells, err := uc.internalLockerRepo.ListCellsByPostID(ctx, automat.ID)
+			if err != nil {
+				fmt.Printf("Warning: Failed to get internal cells for automat %s: %v\n", automat.ID, err)
+			} else {
+				outCellUUIDs := make([]uuid.UUID, 0, len(outCells))
+				for _, cell := range outCells {
+					outCellUUIDs = append(outCellUUIDs, cell.ID)
+				}
 
-			if err := uc.orangePIWebAPI.SendCellUUIDs(ctx, ipAddress, automat.ID, cellUUIDs); err != nil {
-				fmt.Printf("Warning: Failed to send cell UUIDs to OrangePI at %s: %v\n", ipAddress, err)
+				internalCellUUIDs := make([]uuid.UUID, 0, len(internalCells))
+				for _, cell := range internalCells {
+					internalCellUUIDs = append(internalCellUUIDs, cell.ID)
+				}
+
+				if err := uc.orangePIWebAPI.SendCellUUIDs(ctx, ipAddress, automat.ID, outCellUUIDs, internalCellUUIDs); err != nil {
+					fmt.Printf("Warning: Failed to send cell UUIDs to OrangePI at %s: %v\n", ipAddress, err)
+				}
 			}
 		}
 	}
@@ -167,7 +191,9 @@ func (uc *ParcelAutomatUseCase) ProcessQRScan(ctx context.Context, qrDataJSON st
 	}
 
 	for _, cellID := range cellIDs {
-		uc.lockerRepo.UpdateCellStatus(ctx, cellID, "opened")
+		if err := uc.lockerRepo.UpdateCellStatus(ctx, cellID, "opened"); err != nil {
+			log.Printf("[PARCEL_AUTOMAT] Failed to open external cell %s: %v", cellID, err)
+		}
 	}
 
 	return cellIDs, nil
@@ -202,39 +228,70 @@ func (uc *ParcelAutomatUseCase) ConfirmPickup(ctx context.Context, cellIDs []uui
 			if err := uc.lockerRepo.UpdateCellStatus(ctx, cellID, "available"); err != nil {
 				return fmt.Errorf("parcel automat usecase - ConfirmPickup - lockerRepo.UpdateCellStatus: %w", err)
 			}
+
+			// Find order by cell_id and release internal cell
+			orders, err := uc.orderRepo.List(ctx)
+			if err == nil {
+				for _, order := range orders {
+					if order.LockerCellID != nil && *order.LockerCellID == cellID {
+						delivery, err := uc.deliveryRepo.GetByOrderID(ctx, order.ID)
+						if err == nil && delivery.InternalLockerCellID != nil {
+							if uc.internalLockerRepo != nil {
+								if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "available"); err != nil {
+									log.Printf("[PARCEL_AUTOMAT] Failed to release internal cell %s: %v", *delivery.InternalLockerCellID, err)
+								} else {
+									log.Printf("[PARCEL_AUTOMAT] Released internal cell %s for order %s", *delivery.InternalLockerCellID, order.ID)
+								}
+							}
+						}
+						// Update order status to completed
+						uc.orderRepo.UpdateStatus(ctx, order.ID, "completed")
+						break
+					}
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-func (uc *ParcelAutomatUseCase) PrepareCell(ctx context.Context, orderID, parcelAutomatID uuid.UUID) (uuid.UUID, error) {
+func (uc *ParcelAutomatUseCase) PrepareCell(ctx context.Context, orderID, parcelAutomatID uuid.UUID) (uuid.UUID, *uuid.UUID, error) {
 	order, err := uc.orderRepo.GetByID(ctx, orderID)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell - orderRepo.GetByID: %w", err)
+		return uuid.Nil, nil, fmt.Errorf("parcel automat usecase - PrepareCell - orderRepo.GetByID: %w", err)
 	}
 
 	if order.LockerCellID == nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell: order has no cell assigned")
+		return uuid.Nil, nil, fmt.Errorf("parcel automat usecase - PrepareCell: order has no cell assigned")
 	}
 
 	cell, err := uc.lockerRepo.GetCellByID(ctx, *order.LockerCellID)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell - lockerRepo.GetCellByID: %w", err)
+		return uuid.Nil, nil, fmt.Errorf("parcel automat usecase - PrepareCell - lockerRepo.GetCellByID: %w", err)
 	}
 
 	automat, err := uc.parcelAutomatRepo.GetByID(ctx, parcelAutomatID)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell - parcelAutomatRepo.GetByID: %w", err)
+		return uuid.Nil, nil, fmt.Errorf("parcel automat usecase - PrepareCell - parcelAutomatRepo.GetByID: %w", err)
 	}
 
-	if err := uc.orangePIWebAPI.OpenCell(ctx, automat.IPAddress, cell.ID); err != nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell - orangePIWebAPI.OpenCell: %w", err)
+	var internalDoorID *uuid.UUID
+	delivery, err := uc.deliveryRepo.GetByOrderID(ctx, order.ID)
+	if err != nil {
+	if err != nil {
+		fmt.Printf("parcel automat usecase - PrepareCell - deliveryRepo.GetByOrderID warning: %v\n", err)
+	} else if delivery.InternalLockerCellID != nil {
+		internalDoorID = delivery.InternalLockerCellID
+		if err := uc.orangePIWebAPI.OpenCell(ctx, automat.IPAddress, *internalDoorID); err != nil {
+			return uuid.Nil, nil, fmt.Errorf("parcel automat usecase - PrepareCell - orangePIWebAPI.OpenCell (internal): %w", err)
+		}
+		if uc.internalLockerRepo != nil {
+			if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *internalDoorID, "opened"); err != nil {
+				fmt.Printf("parcel automat usecase - PrepareCell - internalLockerRepo.UpdateCellStatus: %v\n", err)
+			}
+		}
 	}
 
-	if err := uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "opened"); err != nil {
-		return uuid.Nil, fmt.Errorf("parcel automat usecase - PrepareCell - lockerRepo.UpdateCellStatus: %w", err)
-	}
-
-	return cell.ID, nil
+	return cell.ID, internalDoorID, nil
 }

@@ -21,26 +21,33 @@ echo "Installing for user: $USER_NAME"
 echo "Repository path: $SOURCE_DIR"
 echo ""
 
-echo "Step 1: Ensure start_drone.sh is executable..."
-chmod +x "$SOURCE_DIR/start_drone.sh"
+echo "Step 1: Ensure scripts are executable..."
+chmod +x "$SOURCE_DIR/root_scripts/delivery_flight.py"
+chmod +x "$SOURCE_DIR/root_scripts/flight_back.py"
 
 if [ ! -f "$SOURCE_DIR/.env" ]; then
     echo "WARNING: .env not found in $SOURCE_DIR"
     echo "Create one before starting the service (cp .env.example .env)"
 fi
 
-if [ ! -f "$SOURCE_DIR/start_drone.sh" ]; then
-    echo "ERROR: start_drone.sh not found in $SOURCE_DIR"
-    exit 1
+echo "Step 2: Copy flight scripts to /root..."
+if [ -d "/root" ]; then
+    cp "$SOURCE_DIR/root_scripts/delivery_flight.py" /root/
+    cp "$SOURCE_DIR/root_scripts/flight_back.py" /root/
+    chmod +x /root/delivery_flight.py
+    chmod +x /root/flight_back.py
+    echo "Flight scripts copied to /root/"
+else
+    echo "WARNING: /root directory not accessible"
 fi
 
-echo "Step 2: Preparing systemd service file..."
+echo "Step 3: Preparing systemd service file..."
 TMP_SERVICE=$(mktemp)
 cp "$SCRIPT_DIR/drone.service" "$TMP_SERVICE"
 sed -i "s#__USER__#$USER_NAME#g" "$TMP_SERVICE"
 sed -i "s#__WORKING_DIR__#$SOURCE_DIR#g" "$TMP_SERVICE"
 
-echo "Step 3: Installing systemd unit..."
+echo "Step 4: Installing systemd unit..."
 cp "$TMP_SERVICE" "$SERVICE_FILE"
 rm "$TMP_SERVICE"
 
@@ -58,6 +65,9 @@ echo ""
 echo "Logs (journalctl):"
 echo "  sudo journalctl -u $SERVICE_NAME -f"
 echo ""
-echo "Remember to configure ROS (.bashrc or start_drone.sh) and .env"
+echo "Flight scripts installed:"
+echo "  /root/delivery_flight.py"
+echo "  /root/flight_back.py"
 echo ""
-
+echo "Remember to configure ROS environment and .env file"
+echo ""

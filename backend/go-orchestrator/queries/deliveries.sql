@@ -1,6 +1,6 @@
 -- name: CreateDelivery :one
-INSERT INTO deliveries (order_id, drone_id, parcel_automat_id, status)
-VALUES ($1, $2, $3, $4)
+INSERT INTO deliveries (order_id, drone_id, parcel_automat_id, internal_locker_cell_id, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetDeliveryByID :one

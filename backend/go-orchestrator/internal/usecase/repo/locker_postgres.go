@@ -19,7 +19,7 @@ func NewLockerRepo(db *pgxpool.Pool) *LockerRepo {
 	return &LockerRepo{db: db, q: sqlc.New(db)}
 }
 
-func toEntityLockerCell(c sqlc.LockerCell) *entity.LockerCell {
+func toEntityLockerCell(c sqlc.LockerCellsOut) *entity.LockerCell {
 	return &entity.LockerCell{
 		ID:     c.ID,
 		PostID: c.PostID,
@@ -32,11 +32,12 @@ func toEntityLockerCell(c sqlc.LockerCell) *entity.LockerCell {
 
 func (r *LockerRepo) Create(ctx context.Context, postID uuid.UUID, height, length, width float64) (*entity.LockerCell, error) {
 	c, err := r.q.CreateLockerCell(ctx, sqlc.CreateLockerCellParams{
-		PostID: postID,
-		Height: height,
-		Length: length,
-		Width:  width,
-		Status: "available",
+		PostID:     postID,
+		Height:     height,
+		Length:     length,
+		Width:      width,
+		Status:     "available",
+		CellNumber: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("LockerRepo - Create - q.CreateLockerCell: %w", err)
@@ -44,13 +45,30 @@ func (r *LockerRepo) Create(ctx context.Context, postID uuid.UUID, height, lengt
 	return toEntityLockerCell(c), nil
 }
 
+func (r *LockerRepo) CreateWithNumber(ctx context.Context, postID uuid.UUID, height, length, width float64, cellNumber int) (*entity.LockerCell, error) {
+	num := int32(cellNumber)
+	c, err := r.q.CreateLockerCell(ctx, sqlc.CreateLockerCellParams{
+		PostID:     postID,
+		Height:     height,
+		Length:     length,
+		Width:      width,
+		Status:     "available",
+		CellNumber: &num,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("LockerRepo - CreateWithNumber - q.CreateLockerCell: %w", err)
+	}
+	return toEntityLockerCell(c), nil
+}
+
 func (r *LockerRepo) CreateCell(ctx context.Context, postID uuid.UUID, height, length, width float64, status string) (*entity.LockerCell, error) {
 	c, err := r.q.CreateLockerCell(ctx, sqlc.CreateLockerCellParams{
-		PostID: postID,
-		Height: height,
-		Length: length,
-		Width:  width,
-		Status: status,
+		PostID:     postID,
+		Height:     height,
+		Length:     length,
+		Width:      width,
+		Status:     status,
+		CellNumber: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("LockerRepo - CreateCell - q.CreateLockerCell: %w", err)

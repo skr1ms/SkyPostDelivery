@@ -1,24 +1,34 @@
-#define CELL_DOOR_1 2
-#define CELL_DOOR_2 3
-#define CELL_DOOR_3 4
+#include <Servo.h>
 
-#define LED_1 8
-#define LED_2 9
-#define LED_3 10
+#define SERVO_INTERNAL_1 A1
+#define SERVO_INTERNAL_2 A2
+#define SERVO_INTERNAL_3 A3
+
+#define SERVO_DOOR_1 A4
+#define SERVO_DOOR_2 A5
+#define SERVO_DOOR_3 A6
+
+Servo servoInternal1;
+Servo servoInternal2;
+Servo servoInternal3;
+
+Servo servoDoor1;
+Servo servoDoor2;
+Servo servoDoor3;
 
 String inputCommand = "";
 boolean commandComplete = false;
 
 void setup() {
   Serial.begin(9600);
+ 
+  servoInternal1.attach(SERVO_INTERNAL_1);
+  servoInternal2.attach(SERVO_INTERNAL_2);
+  servoInternal3.attach(SERVO_INTERNAL_3);
   
-  pinMode(CELL_DOOR_1, OUTPUT);
-  pinMode(CELL_DOOR_2, OUTPUT);
-  pinMode(CELL_DOOR_3, OUTPUT);
-  
-  pinMode(LED_1, OUTPUT);
-  pinMode(LED_2, OUTPUT);
-  pinMode(LED_3, OUTPUT);
+  servoDoor1.attach(SERVO_DOOR_1);
+  servoDoor2.attach(SERVO_DOOR_2);
+  servoDoor3.attach(SERVO_DOOR_3);
   
   closeAllDoors();
   
@@ -51,15 +61,11 @@ void processCommand(String cmd) {
     int cellNum = cmd.substring(5).toInt();
     openCellDoor(cellNum);
   }
-  else if (cmd.startsWith("close_")) {
-    int cellNum = cmd.substring(6).toInt();
-    closeCellDoor(cellNum);
+  else if (cmd.startsWith("internal_")) {
+    int cellNum = cmd.substring(9).toInt();
+    openInternalDoor(cellNum);
   }
-  else if (cmd.startsWith("status_")) {
-    int cellNum = cmd.substring(7).toInt();
-    sendCellStatus(cellNum);
-  }
-  else if (cmd == "cells_0") {
+  else if (cmd == "cells") {
     Serial.println("3");
   }
   else if (cmd == "reset") {
@@ -72,89 +78,82 @@ void processCommand(String cmd) {
 }
 
 void openCellDoor(int cellNum) {
-  int pin, ledPin;
+  Servo* servo;
   
   switch(cellNum) {
     case 1:
-      pin = CELL_DOOR_1;
-      ledPin = LED_1;
+      servo = &servoDoor1;
       break;
     case 2:
-      pin = CELL_DOOR_2;
-      ledPin = LED_2;
+      servo = &servoDoor2;
       break;
     case 3:
-      pin = CELL_DOOR_3;
-      ledPin = LED_3;
+      servo = &servoDoor3;
       break;
     default:
-      Serial.println("ERROR");
+      Serial.println("ERROR: Cell Num not found");
       return;
   }
   
-  digitalWrite(pin, HIGH);
-  digitalWrite(ledPin, HIGH);
+  smoothMove(servo, 90, 75, 200);
+  delay(5*1000);
+  smoothMove(servo, 75, 90, 200);
+
   Serial.println("OK");
 }
 
-void closeCellDoor(int cellNum) {
-  int pin, ledPin;
+void openInternalDoor(int cellNum) {
+  Servo* servo;
   
   switch(cellNum) {
     case 1:
-      pin = CELL_DOOR_1;
-      ledPin = LED_1;
+      servo = &servoInternal1;
       break;
     case 2:
-      pin = CELL_DOOR_2;
-      ledPin = LED_2;
+      servo = &servoInternal2;
       break;
     case 3:
-      pin = CELL_DOOR_3;
-      ledPin = LED_3;
+      servo = &servoInternal3;
       break;
     default:
-      Serial.println("ERROR");
+      Serial.println("ERROR: Internal Door Num not found");
+      Serial.println(cellNum);
       return;
   }
-  
-  digitalWrite(pin, LOW);
-  digitalWrite(ledPin, LOW);
+
+  smoothMove(servo, 45, 0, 200);
+  delay(10*1000);
+  smoothMove(servo, 0, 45, 200);
+
   Serial.println("OK");
 }
 
-void sendCellStatus(int cellNum) {
-  int pin;
-  
-  switch(cellNum) {
-    case 1:
-      pin = CELL_DOOR_1;
-      break;
-    case 2:
-      pin = CELL_DOOR_2;
-      break;
-    case 3:
-      pin = CELL_DOOR_3;
-      break;
-    default:
-      Serial.println("closed");
-      return;
-  }
-  
-  if (digitalRead(pin) == HIGH) {
-    Serial.println("opened");
+void closeAllDoors() {  
+  servoInternal1.write(42);
+  delay(1000);
+  servoInternal2.write(42);
+  delay(1000);
+  servoInternal3.write(42);
+  delay(1000);
+
+  servoDoor1.write(90);
+  delay(1000);
+  servoDoor2.write(90);
+  delay(1000);
+  servoDoor3.write(90);
+  delay(1000);
+}
+
+void smoothMove(Servo* servo, int startAngle, int endAngle, int delayTime) {
+  if (startAngle < endAngle) {
+    for (int pos = startAngle; pos <= endAngle; pos++) {
+      servo->write(pos);
+      delay(delayTime);
+    }
   } else {
-    Serial.println("closed");
+    for (int pos = startAngle; pos >= endAngle; pos--) {
+      servo->write(pos);
+      delay(delayTime);
+    }
   }
 }
-
-void closeAllDoors() {
-  digitalWrite(CELL_DOOR_1, LOW);
-  digitalWrite(CELL_DOOR_2, LOW);
-  digitalWrite(CELL_DOOR_3, LOW);
-  
-  digitalWrite(LED_1, LOW);
-  digitalWrite(LED_2, LOW);
-  digitalWrite(LED_3, LOW);
-}
-

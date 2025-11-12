@@ -227,9 +227,6 @@ func (c *Client) handleReturns() {
 			}
 			log.Printf("Message returned from RabbitMQ: queue=%s, reason=%d, reply_text=%s",
 				ret.RoutingKey, ret.ReplyCode, ret.ReplyText)
-
-			// Здесь можно добавить логику повторной отправки в DLQ
-			// или уведомление системы мониторинга
 		}
 	}
 }

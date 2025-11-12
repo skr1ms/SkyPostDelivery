@@ -24,22 +24,29 @@ func NewOrangePIAdapter() *OrangePIAdapter {
 }
 
 type CellUUIDsPayload struct {
-	Cells            []string `json:"cells"`
+	CellsOut        []string `json:"cells_out"`
+	CellsInternal   []string `json:"cells_internal"`
 	ParcelAutomatID string   `json:"parcel_automat_id"`
 }
 
-func (a *OrangePIAdapter) SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, cellUUIDs []uuid.UUID) error {
+func (a *OrangePIAdapter) SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, outCellUUIDs []uuid.UUID, internalCellUUIDs []uuid.UUID) error {
 	if ipAddress == "" {
 		return fmt.Errorf("ip address is empty")
 	}
 
-	cellStrings := make([]string, len(cellUUIDs))
-	for i, id := range cellUUIDs {
-		cellStrings[i] = id.String()
+	outStrings := make([]string, len(outCellUUIDs))
+	for i, id := range outCellUUIDs {
+		outStrings[i] = id.String()
+	}
+
+	internalStrings := make([]string, len(internalCellUUIDs))
+	for i, id := range internalCellUUIDs {
+		internalStrings[i] = id.String()
 	}
 
 	payload := CellUUIDsPayload{
-		Cells:            cellStrings,
+		CellsOut:        outStrings,
+		CellsInternal:   internalStrings,
 		ParcelAutomatID: parcelAutomatID.String(),
 	}
 

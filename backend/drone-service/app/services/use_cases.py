@@ -1,12 +1,15 @@
 import asyncio
+import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.models.models import (
     DeliveryTask, GoodDimensions, DeliveryStatus
 )
 from app.models.ports import StateRepositoryPort
 from app.services.drone_manager import DroneManager
+
+logger = logging.getLogger(__name__)
 
 
 class DeliveryUseCase:
@@ -32,7 +35,8 @@ class DeliveryUseCase:
         locker_cell_id: str,
         parcel_automat_id: str,
         aruco_id: int,
-        dimensions: Dict[str, float]
+        dimensions: Dict[str, float],
+        internal_locker_cell_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         try:
             delivery_id = str(uuid.uuid4())
@@ -42,6 +46,7 @@ class DeliveryUseCase:
                 order_id=order_id,
                 good_id=good_id,
                 locker_cell_id=locker_cell_id,
+                internal_locker_cell_id=internal_locker_cell_id,
                 parcel_automat_id=parcel_automat_id,
                 dimensions=GoodDimensions(**dimensions),
                 created_at=datetime.now(),
@@ -81,8 +86,19 @@ class DeliveryUseCase:
         weight: float = 0,
         height: float = 0,
         length: float = 0,
-        width: float = 0
+        width: float = 0,
+        internal_locker_cell_id: Optional[str] = None,
     ):
+        logger.info(
+            "Preparing delivery task",
+            extra={
+                "drone_id": drone_id,
+                "order_id": order_id,
+                "aruco_id": aruco_id,
+                "coordinates": coordinates
+            }
+        )
+        print(f"[USE_CASE] Preparing delivery: drone={drone_id}, order={order_id}, aruco={aruco_id}, coords='{coordinates}'")
         delivery_id = order_id
 
         task = DeliveryTask(
@@ -90,6 +106,7 @@ class DeliveryUseCase:
             order_id=order_id,
             good_id=good_id,
             locker_cell_id="",
+            internal_locker_cell_id=internal_locker_cell_id,
             drone_id=drone_id,
             parcel_automat_id=parcel_automat_id,
             dimensions=GoodDimensions(
@@ -113,6 +130,15 @@ class DeliveryUseCase:
             )
 
             if self.drone_ws_handler:
+                logger.info(
+                    "Sending delivery task to drone",
+                    extra={
+                        "drone_id": task.drone_id,
+                        "delivery_id": task.delivery_id,
+                        "order_id": task.order_id
+                    }
+                )
+                print(f"[USE_CASE] Sending task to drone {task.drone_id} (delivery={task.delivery_id}, order={task.order_id})")
                 task_data = {
                     "delivery_id": task.delivery_id,
                     "order_id": task.order_id,
@@ -120,6 +146,7 @@ class DeliveryUseCase:
                     "parcel_automat_id": task.parcel_automat_id,
                     "aruco_id": task.aruco_id,
                     "coordinates": getattr(task, 'coordinates', ""),
+                    "internal_cell_id": getattr(task, 'internal_locker_cell_id', None),
                     "dimensions": {
                         "weight": task.dimensions.weight,
                         "height": task.dimensions.height,
@@ -133,6 +160,15 @@ class DeliveryUseCase:
 
             if not success:
                 raise Exception("Failed to send task to drone")
+            else:
+                logger.info(
+                    "Delivery task sent to drone successfully",
+                    extra={
+                        "drone_id": task.drone_id,
+                        "delivery_id": task.delivery_id
+                    }
+                )
+                print(f"[USE_CASE] Task sent successfully to drone {task.drone_id} (delivery={task.delivery_id})")
 
         except Exception as e:
             task.error_message = str(e)
@@ -191,11 +227,15 @@ class DeliveryUseCase:
 
             if response["success"]:
                 if self.drone_ws_handler:
-                    await self.drone_ws_handler.send_command_to_drone(drone_id, {
+                    await self.drone_ws_handler.send_command_to_drone(
+                        drone_id,
+                        {
                         "command": "drop_cargo",
                         "order_id": order_id,
-                        "cell_id": response["cell_id"]
-                    })
+                            "cell_id": response["cell_id"],
+                            "internal_cell_id": response.get("internal_cell_id"),
+                        },
+                    )
                 return response
             else:
                 return {"success": False, "message": f"Failed to open cell: {response['message']}"}

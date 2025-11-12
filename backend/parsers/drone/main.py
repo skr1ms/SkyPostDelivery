@@ -18,6 +18,8 @@ import base64
 
 from config.config import settings
 from app.dependencies import websocket_service, cleanup
+from app.hardware.flight_manager import flight_manager
+from app.hardware.ros_bridge import ros_bridge as ros_topic_bridge
 
 logging.basicConfig(
     level=settings.log_level,
@@ -136,6 +138,22 @@ class DroneApplication:
         try:
             if self.ros_bridge:
                 websocket_service.ros_bridge = self.ros_bridge
+                websocket_service.flight_manager = flight_manager
+
+            async def on_arrival():
+                logger.info("Handling drone arrival notification")
+                
+            async def on_drop_ready():
+                logger.info("Handling cargo drop ready notification")
+                
+            async def on_home():
+                logger.info("Handling home arrival notification")
+            
+            ros_topic_bridge.set_arrival_callback(on_arrival)
+            ros_topic_bridge.set_drop_ready_callback(on_drop_ready)
+            ros_topic_bridge.set_home_callback(on_home)
+            
+            await ros_topic_bridge.start_listeners()
 
             await websocket_service.connect()
         except asyncio.CancelledError:
@@ -146,6 +164,8 @@ class DroneApplication:
     async def stop(self):
         logger.info("Stopping Drone Application")
         self.is_running = False
+        
+        await ros_topic_bridge.stop_listeners()
 
         if not rospy.is_shutdown():
             rospy.signal_shutdown("Application stopping")

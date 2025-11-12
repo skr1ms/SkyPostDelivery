@@ -42,7 +42,6 @@ class Settings:
     grid_width: int = int(os.getenv("GRID_WIDTH", "10"))
     grid_height: int = int(os.getenv("GRID_HEIGHT", "10"))
 
-    aruco_map_file: str = os.getenv("ARUCO_MAP_FILE", "config/aruco_map.txt")
     use_clover_api: bool = os.getenv(
         "USE_CLOVER_API", "true").lower() == "true"
 

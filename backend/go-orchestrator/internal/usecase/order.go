@@ -13,13 +13,14 @@ import (
 )
 
 type OrderUseCase struct {
-	orderRepo         OrderRepo
-	goodRepo          GoodRepo
-	droneRepo         DroneRepo
-	deliveryRepo      DeliveryRepo
-	parcelAutomatRepo ParcelAutomatRepo
-	lockerRepo        LockerRepo
-	rabbitmqClient    RabbitMQClient
+	orderRepo          OrderRepo
+	goodRepo           GoodRepo
+	droneRepo          DroneRepo
+	deliveryRepo       DeliveryRepo
+	parcelAutomatRepo  ParcelAutomatRepo
+	lockerRepo         LockerRepo
+	internalLockerRepo InternalLockerRepo
+	rabbitmqClient     RabbitMQClient
 }
 
 func NewOrderUseCase(
@@ -29,16 +30,18 @@ func NewOrderUseCase(
 	deliveryRepo DeliveryRepo,
 	parcelAutomatRepo ParcelAutomatRepo,
 	lockerRepo LockerRepo,
+	internalLockerRepo InternalLockerRepo,
 	rabbitmqClient RabbitMQClient,
 ) *OrderUseCase {
 	return &OrderUseCase{
-		orderRepo:         orderRepo,
-		goodRepo:          goodRepo,
-		droneRepo:         droneRepo,
-		deliveryRepo:      deliveryRepo,
-		parcelAutomatRepo: parcelAutomatRepo,
-		lockerRepo:        lockerRepo,
-		rabbitmqClient:    rabbitmqClient,
+		orderRepo:          orderRepo,
+		goodRepo:           goodRepo,
+		droneRepo:          droneRepo,
+		deliveryRepo:       deliveryRepo,
+		parcelAutomatRepo:  parcelAutomatRepo,
+		lockerRepo:         lockerRepo,
+		internalLockerRepo: internalLockerRepo,
+		rabbitmqClient:     rabbitmqClient,
 	}
 }
 
@@ -72,10 +75,54 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 		return nil, fmt.Errorf("order usecase - CreateOrder - goodRepo.UpdateQuantity: %w", err)
 	}
 
+	var internalCellID *uuid.UUID
+	var internalCellReserved bool
+	if uc.internalLockerRepo != nil {
+		allExternalCells, err := uc.lockerRepo.ListCellsByPostID(ctx, parcelAutomat.ID)
+		if err == nil {
+			allInternalCells, err := uc.internalLockerRepo.ListCellsByPostID(ctx, parcelAutomat.ID)
+			if err == nil && len(allExternalCells) == len(allInternalCells) {
+				for idx, extCell := range allExternalCells {
+					if extCell.ID == cell.ID && idx < len(allInternalCells) {
+						internalCell := allInternalCells[idx]
+						if internalCell.Status == "available" {
+							if err := uc.internalLockerRepo.UpdateCellStatus(ctx, internalCell.ID, "reserved"); err != nil {
+								log.Printf("[ORDER] Failed to reserve internal cell %s: %v", internalCell.ID, err)
+							} else {
+								internalCellReserved = true
+								internalCellID = &internalCell.ID
+								log.Printf("[ORDER] Reserved internal cell %s (same index as external cell %s)", internalCell.ID, cell.ID)
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+
+		if internalCellID == nil {
+			log.Printf("[ORDER] Could not find matching internal cell for external cell %s, trying any available", cell.ID)
+			internalCell, findErr := uc.internalLockerRepo.FindAvailableCell(ctx, 0, 0, 0)
+			if findErr != nil {
+				log.Printf("[ORDER] Failed to find internal locker cell for automat %s: %v", parcelAutomat.ID, findErr)
+			} else {
+				if err := uc.internalLockerRepo.UpdateCellStatus(ctx, internalCell.ID, "reserved"); err != nil {
+					log.Printf("[ORDER] Failed to reserve internal locker cell %s for automat %s: %v", internalCell.ID, parcelAutomat.ID, err)
+				} else {
+					internalCellReserved = true
+					internalCellID = &internalCell.ID
+				}
+			}
+		}
+	}
+
 	orderRepo, ok := uc.orderRepo.(*repo.OrderRepo)
 	if !ok {
 		uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
 		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
+		if uc.internalLockerRepo != nil && internalCellID != nil {
+			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+		}
 		return nil, fmt.Errorf("order usecase - CreateOrder: invalid order repo type")
 	}
 
@@ -83,13 +130,16 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 	if err != nil {
 		uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
 		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
+		if uc.internalLockerRepo != nil && internalCellID != nil {
+			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+		}
 		return nil, fmt.Errorf("order usecase - CreateOrder - orderRepo.CreateWithCell: %w", err)
 	}
 
 	drone, err := uc.droneRepo.GetAvailable(ctx)
 	if err != nil {
 		log.Printf("[ORDER] No available drone for order %s: %v", order.ID, err)
-		_, deliveryErr := uc.deliveryRepo.Create(ctx, order.ID, nil, parcelAutomat.ID, "awaiting_drone")
+		_, deliveryErr := uc.deliveryRepo.Create(ctx, order.ID, nil, parcelAutomat.ID, internalCellID, "awaiting_drone")
 		if deliveryErr != nil {
 			fmt.Printf("Warning: failed to create delivery record for order %s: %v\n", order.ID, deliveryErr)
 		}
@@ -105,29 +155,33 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 
 	log.Printf("[ORDER] Drone %s status updated to busy for order %s", drone.ID, order.ID)
 
-	delivery, err := uc.deliveryRepo.Create(ctx, order.ID, &drone.ID, parcelAutomat.ID, "pending")
+	delivery, err := uc.deliveryRepo.Create(ctx, order.ID, &drone.ID, parcelAutomat.ID, internalCellID, "pending")
 	if err != nil {
 		log.Printf("[ORDER] Failed to create delivery for order %s with drone %s: %v", order.ID, drone.ID, err)
 		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
+		if internalCellReserved && uc.internalLockerRepo != nil && internalCellID != nil {
+			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+		}
 		return order, nil
 	}
 
 	log.Printf("[ORDER] Created delivery %s for order %s (drone %s)", delivery.ID, order.ID, drone.ID)
 
 	deliveryTask := rabbitmq.DeliveryTask{
-		DroneID:         drone.ID,
-		DroneIP:         drone.IPAddress,
-		OrderID:         order.ID,
-		GoodID:          goodID,
-		ParcelAutomatID: parcelAutomat.ID,
-		ArucoID:         parcelAutomat.ArucoID,
-		Coordinates:     parcelAutomat.Coordinates,
-		Weight:          good.Weight,
-		Height:          good.Height,
-		Length:          good.Length,
-		Width:           good.Width,
-		Priority:        0,
-		CreatedAt:       time.Now().Unix(),
+		DroneID:              drone.ID,
+		DroneIP:              drone.IPAddress,
+		OrderID:              order.ID,
+		GoodID:               goodID,
+		ParcelAutomatID:      parcelAutomat.ID,
+		InternalLockerCellID: internalCellID,
+		ArucoID:              parcelAutomat.ArucoID,
+		Coordinates:          parcelAutomat.Coordinates,
+		Weight:               good.Weight,
+		Height:               good.Height,
+		Length:               good.Length,
+		Width:                good.Width,
+		Priority:             0,
+		CreatedAt:            time.Now().Unix(),
 	}
 
 	queueName := rabbitmq.QueueDeliveries
@@ -141,6 +195,9 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 		log.Printf("[ORDER] Publish failed for order %s: %v", order.ID, err)
 		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
 		uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "failed")
+		if internalCellReserved && uc.internalLockerRepo != nil && internalCellID != nil {
+			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+		}
 		return order, nil
 	}
 
@@ -251,6 +308,12 @@ func (uc *OrderUseCase) ReturnOrder(ctx context.Context, orderID, userID uuid.UU
 	if order.LockerCellID != nil {
 		if err := uc.lockerRepo.UpdateCellStatus(ctx, *order.LockerCellID, "available"); err != nil {
 			return fmt.Errorf("order usecase - ReturnOrder - lockerRepo.UpdateCellStatus: %w", err)
+		}
+	}
+
+	if uc.internalLockerRepo != nil && delivery != nil && delivery.InternalLockerCellID != nil {
+		if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "available"); err != nil {
+			log.Printf("[ORDER] Failed to release internal locker cell %s during return: %v", *delivery.InternalLockerCellID, err)
 		}
 	}
 

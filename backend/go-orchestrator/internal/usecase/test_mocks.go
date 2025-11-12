@@ -207,6 +207,14 @@ func (m *MockLockerRepo) Create(ctx context.Context, postID uuid.UUID, height, l
 	return args.Get(0).(*entity.LockerCell), args.Error(1)
 }
 
+func (m *MockLockerRepo) CreateWithNumber(ctx context.Context, postID uuid.UUID, height, length, width float64, cellNumber int) (*entity.LockerCell, error) {
+	args := m.Called(ctx, postID, height, length, width, cellNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
 func (m *MockLockerRepo) FindAvailableCell(ctx context.Context, height, length, width float64) (*entity.LockerCell, error) {
 	args := m.Called(ctx, height, length, width)
 	if args.Get(0) == nil {
@@ -245,6 +253,71 @@ func (m *MockLockerRepo) GetCellByID(ctx context.Context, id uuid.UUID) (*entity
 }
 
 func (m *MockLockerRepo) ListCellsByPostID(ctx context.Context, postID uuid.UUID) ([]*entity.LockerCell, error) {
+	args := m.Called(ctx, postID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*entity.LockerCell), args.Error(1)
+}
+
+type MockInternalLockerRepo struct {
+	mock.Mock
+}
+
+func (m *MockInternalLockerRepo) Create(ctx context.Context, postID uuid.UUID, height, length, width float64) (*entity.LockerCell, error) {
+	args := m.Called(ctx, postID, height, length, width)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) CreateWithNumber(ctx context.Context, postID uuid.UUID, height, length, width float64, cellNumber int) (*entity.LockerCell, error) {
+	args := m.Called(ctx, postID, height, length, width, cellNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) CreateCell(ctx context.Context, postID uuid.UUID, height, length, width float64, status string) (*entity.LockerCell, error) {
+	args := m.Called(ctx, postID, height, length, width, status)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) GetCellByID(ctx context.Context, id uuid.UUID) (*entity.LockerCell, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) FindAvailableCell(ctx context.Context, height, length, width float64) (*entity.LockerCell, error) {
+	args := m.Called(ctx, height, length, width)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) UpdateCellStatus(ctx context.Context, id uuid.UUID, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
+func (m *MockInternalLockerRepo) UpdateDimensions(ctx context.Context, id uuid.UUID, height, length, width float64) (*entity.LockerCell, error) {
+	args := m.Called(ctx, id, height, length, width)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.LockerCell), args.Error(1)
+}
+
+func (m *MockInternalLockerRepo) ListCellsByPostID(ctx context.Context, postID uuid.UUID) ([]*entity.LockerCell, error) {
 	args := m.Called(ctx, postID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -310,8 +383,8 @@ type MockDeliveryRepo struct {
 	mock.Mock
 }
 
-func (m *MockDeliveryRepo) Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, status string) (*entity.Delivery, error) {
-	args := m.Called(ctx, orderID, droneID, parcelAutomatID, status)
+func (m *MockDeliveryRepo) Create(ctx context.Context, orderID uuid.UUID, droneID *uuid.UUID, parcelAutomatID uuid.UUID, internalLockerCellID *uuid.UUID, status string) (*entity.Delivery, error) {
+	args := m.Called(ctx, orderID, droneID, parcelAutomatID, internalLockerCellID, status)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -462,8 +535,8 @@ type MockOrangePIWebAPI struct {
 	mock.Mock
 }
 
-func (m *MockOrangePIWebAPI) SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, cellUUIDs []uuid.UUID) error {
-	args := m.Called(ctx, ipAddress, parcelAutomatID, cellUUIDs)
+func (m *MockOrangePIWebAPI) SendCellUUIDs(ctx context.Context, ipAddress string, parcelAutomatID uuid.UUID, outCellUUIDs []uuid.UUID, internalCellUUIDs []uuid.UUID) error {
+	args := m.Called(ctx, ipAddress, parcelAutomatID, outCellUUIDs, internalCellUUIDs)
 	return args.Error(0)
 }
 

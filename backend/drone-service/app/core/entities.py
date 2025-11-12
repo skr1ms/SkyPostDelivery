@@ -57,6 +57,7 @@ class DeliveryTask:
     order_id: str
     good_id: str
     locker_cell_id: str
+    internal_locker_cell_id: Optional[str] = None
     parcel_automat_id: str
     dimensions: GoodDimensions
     created_at: datetime

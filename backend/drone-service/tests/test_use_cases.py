@@ -36,7 +36,7 @@ def mock_drone_ws_handler():
 @pytest.fixture
 def mock_orchestrator_grpc():
     client = AsyncMock()
-    client.request_cell_open = AsyncMock(return_value={"success": True, "cell_id": "cell_123"})
+    client.request_cell_open = AsyncMock(return_value={"success": True, "cell_id": "cell_123", "internal_cell_id": "internal_456"})
     return client
 
 
@@ -281,7 +281,7 @@ async def test_handle_drone_arrived_requests_cell_and_sends_drop_command(
     )
     mock_drone_ws_handler.send_command_to_drone.assert_called_once_with(
         drone_id,
-        {"command": "drop_cargo", "order_id": order_id, "cell_id": "cell_123"}
+        {"command": "drop_cargo", "order_id": order_id, "cell_id": "cell_123", "internal_cell_id": "internal_456"}
     )
 
 

@@ -14,8 +14,9 @@ func TestOrangePIAdapter_SendCellUUIDs_EmptyIP(t *testing.T) {
 
 	parcelAutomatID := uuid.New()
 	cellUUIDs := []uuid.UUID{uuid.New()}
+	internalCellUUIDs := []uuid.UUID{uuid.New()}
 
-	err := adapter.SendCellUUIDs(ctx, "", parcelAutomatID, cellUUIDs)
+	err := adapter.SendCellUUIDs(ctx, "", parcelAutomatID, cellUUIDs, internalCellUUIDs)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "ip address is empty")
@@ -27,8 +28,9 @@ func TestOrangePIAdapter_SendCellUUIDs_RequestFailed(t *testing.T) {
 
 	parcelAutomatID := uuid.New()
 	cellUUIDs := []uuid.UUID{uuid.New()}
+	internalCellUUIDs := []uuid.UUID{uuid.New()}
 
-	err := adapter.SendCellUUIDs(ctx, "invalid-host:9999", parcelAutomatID, cellUUIDs)
+	err := adapter.SendCellUUIDs(ctx, "invalid-host:9999", parcelAutomatID, cellUUIDs, internalCellUUIDs)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to send request")

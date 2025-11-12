@@ -61,6 +61,7 @@ class DeliveryTask:
     parcel_automat_id: str
     dimensions: GoodDimensions
     created_at: datetime
+    internal_locker_cell_id: Optional[str] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     drone_id: Optional[str] = None
