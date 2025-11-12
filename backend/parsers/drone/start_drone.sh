@@ -42,7 +42,19 @@ fi
 
 # Load environment variables
 echo "Loading environment variables from .env"
-export $(grep -v '^#' .env | xargs)
+# Support Windows-style line endings just in case
+if grep -q $'\r' .env; then
+    tmp_env=$(mktemp)
+    tr -d '\r' < .env > "$tmp_env"
+    set -a
+    source "$tmp_env"
+    set +a
+    rm "$tmp_env"
+else
+    set -a
+    source .env
+    set +a
+fi
 
 # Check Python dependencies
 echo "Checking Python dependencies..."
@@ -71,6 +83,13 @@ echo ""
 echo "========================================="
 echo "✅ All checks passed!"
 echo "========================================="
+if [ -z "${DRONE_IP}" ] || [ -z "${DRONE_SERVICE_HOST}" ] || [ -z "${DRONE_SERVICE_PORT}" ]; then
+    echo "WARNING: Some required variables are not set (DRONE_IP, DRONE_SERVICE_HOST, DRONE_SERVICE_PORT)."
+    echo "Current values:"
+    echo "  DRONE_IP=${DRONE_IP:-<unset>}"
+    echo "  DRONE_SERVICE_HOST=${DRONE_SERVICE_HOST:-<unset>}"
+    echo "  DRONE_SERVICE_PORT=${DRONE_SERVICE_PORT:-<unset>}"
+fi
 echo "Drone ID: ${DRONE_IP:-not set}"
 echo "Connecting to: ws://${DRONE_SERVICE_HOST:-localhost}:${DRONE_SERVICE_PORT:-8081}/ws/drone"
 echo "========================================="

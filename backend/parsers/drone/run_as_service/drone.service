@@ -1,22 +1,20 @@
 [Unit]
-Description=Drone Parser Service
-After=network.target
+Description=Drone Parser ROS Bridge
+After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=admin
-Group=admin
-WorkingDirectory=/opt/drone-parser
-Environment="PATH=/opt/drone-parser/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+User=__USER__
+Group=__USER__
+WorkingDirectory=__WORKING_DIR__
 Environment="PYTHONUNBUFFERED=1"
-EnvironmentFile=/opt/drone-parser/.env
-ExecStartPre=/bin/sleep 5
-ExecStart=/opt/drone-parser/venv/bin/python /opt/drone-parser/main.py
+EnvironmentFile=__WORKING_DIR__/.env
+ExecStart=/bin/bash -lc '__WORKING_DIR__/start_drone.sh'
 Restart=always
-RestartSec=10
-StandardOutput=append:/var/log/drone-parser/service.log
-StandardError=append:/var/log/drone-parser/error.log
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
