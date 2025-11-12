@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """
-Test flight script for a Clover drone navigating by ArUco markers.
-Takes off from marker 131 (0,0) and flies to marker 135 (1,1).
-
-Usage:
-    rosrun clover simple_flight_test.py
-    or
-    python3 simple_flight_test.py
+ArUco map navigation test
+Takeoff at (0,0) and fly to (1,1) using aruco_map frame
 """
-
 import rospy
 from clover import srv
 from std_srvs.srv import Trigger
+import tf2_ros
 
 print("=" * 60)
-print("CLOVER ARUCO NAVIGATION TEST")
-print("Marker 131 (0,0) -> Marker 135 (1,1)")
+print("ARUCO MAP NAVIGATION TEST")
 print("=" * 60)
 
 rospy.init_node('aruco_navigation_test')
@@ -24,92 +18,92 @@ get_telemetry = rospy.ServiceProxy('get_telemetry', srv.GetTelemetry)
 navigate = rospy.ServiceProxy('navigate', srv.Navigate)
 land = rospy.ServiceProxy('land', Trigger)
 
-print("\nROS node initialised")
-print("Service proxies connected")
+TAKEOFF_HEIGHT = 2.0
+TARGET_X = 1.0  # Координата X маркера 135 в map.txt
+TARGET_Y = 1.0  # Координата Y маркера 135 в map.txt
 
-TAKEOFF_HEIGHT = 2
-CRUISE_HEIGHT = 2
-LANDING_HEIGHT = 0.8
-START_MARKER = 131
-TARGET_MARKER = 135
+def wait_for_frame(frame_id, timeout=30):
+    """Ждём появления системы координат в TF"""
+    print(f"Waiting for frame '{frame_id}'...")
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+    
+    start_time = rospy.Time.now()
+    while (rospy.Time.now() - start_time).to_sec() < timeout:
+        try:
+            # Проверяем, есть ли трансформация от map к искомому фрейму
+            tf_buffer.lookup_transform('map', frame_id, rospy.Time(0), rospy.Duration(1.0))
+            print(f"Frame '{frame_id}' found!")
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            rospy.sleep(0.5)
+    
+    print(f"WARNING: Frame '{frame_id}' not found after {timeout}s")
+    return False
 
-print(f"\nStage 1: takeoff over marker {START_MARKER} (0,0)")
-print(f"Climb to {TAKEOFF_HEIGHT} m")
-navigate(x=0, y=0, z=TAKEOFF_HEIGHT, frame_id=f'aruco_{START_MARKER}', auto_arm=True)
-print("Takeoff command sent")
+# ===== STAGE 1: TAKEOFF =====
+print("\n[Stage 1] Takeoff in body frame")
+print(f"Target height: {TAKEOFF_HEIGHT} m")
 
-print("Waiting for altitude (7 seconds)...")
+navigate(x=0, y=0, z=TAKEOFF_HEIGHT, frame_id='body', auto_arm=True)
+print("Takeoff command sent, waiting 7 seconds...")
 rospy.sleep(7)
 
-telem = get_telemetry(frame_id=f'aruco_{START_MARKER}')
-print(f"Position relative to marker {START_MARKER}:")
-print(f"   x={telem.x:.2f} m, y={telem.y:.2f} m, z={telem.z:.2f} m")
-print(f"   Battery={telem.voltage:.2f} V")
+telem = get_telemetry(frame_id='body')
+print(f"Current altitude: {telem.z:.2f} m")
+print(f"Armed: {telem.armed}, Mode: {telem.mode}")
 
-print("\nStabilising (3 seconds)...")
-rospy.sleep(3)
+# ===== STAGE 2: WAIT FOR ARUCO_MAP =====
+print("\n[Stage 2] Waiting for aruco_map frame...")
+print("Camera must see at least one marker from map.txt")
 
-print(f"\nStage 2: fly to marker {TARGET_MARKER} (1,1)")
-print(f"Cruise altitude {CRUISE_HEIGHT} m")
-navigate(x=0, y=0, z=CRUISE_HEIGHT, frame_id=f'aruco_{TARGET_MARKER}', speed=0.5)
-print("Navigation command sent")
+# Проверяем, какой фрейм создан: aruco_map или aruco_map_detected
+map_frame = None
+if wait_for_frame('aruco_map', timeout=15):
+    map_frame = 'aruco_map'
+elif wait_for_frame('aruco_map_detected', timeout=5):
+    map_frame = 'aruco_map_detected'
+    print("Using 'aruco_map_detected' (aruco_vpe is enabled)")
+else:
+    print("\nERROR: No aruco map frame found!")
+    print("Check:")
+    print("  1. Camera sees markers")
+    print("  2. map.txt is loaded")
+    print("  3. aruco_map=true in aruco.launch")
+    print("\nAborting, landing...")
+    land()
+    rospy.sleep(5)
+    exit(1)
 
-print("Transit to target (15 seconds)...")
-for i in range(15):
-    rospy.sleep(1)
-    telem = get_telemetry(frame_id=f'aruco_{TARGET_MARKER}')
-    print(f"   {i + 1:02d}/15 s | x={telem.x:.2f} m, y={telem.y:.2f} m, z={telem.z:.2f} m")
+# ===== STAGE 3: NAVIGATE TO TARGET =====
+print(f"\n[Stage 3] Navigate to ({TARGET_X}, {TARGET_Y}) in {map_frame}")
 
-telem = get_telemetry(frame_id=f'aruco_{TARGET_MARKER}')
-print(f"\nFinal position over marker {TARGET_MARKER}:")
-print(f"   x={telem.x:.2f} m, y={telem.y:.2f} m, z={telem.z:.2f} m")
-print(f"   Battery={telem.voltage:.2f} V")
+navigate(x=TARGET_X, y=TARGET_Y, z=TAKEOFF_HEIGHT, frame_id=map_frame, speed=0.5)
+print("Navigation command sent, flying...")
 
-print(f"\nStage 3: hover over marker {TARGET_MARKER} (5 seconds)")
+# ===== STAGE 4: HOVER AND CHECK =====
+print("\n[Stage 4] Hovering at target (5 seconds)")
+telem = get_telemetry(frame_id=map_frame)
+print(f"Final position: x={telem.x:.2f}, y={telem.y:.2f}, z={telem.z:.2f}")
+
 for i in range(5):
     rospy.sleep(1)
-    telem = get_telemetry(frame_id=f'aruco_{TARGET_MARKER}')
-    print(f"   {i + 1:02d}/05 s | x={telem.x:.2f} m, y={telem.y:.2f} m, z={telem.z:.2f} m | Battery={telem.voltage:.2f} V")
+    telem = get_telemetry(frame_id=map_frame)
+    print(f"  t={i+1}s | pos=({telem.x:.2f}, {telem.y:.2f}, {telem.z:.2f}) | battery={telem.voltage:.2f}V")
 
-print("Hover complete")
-
-print(f"\nStage 4: precision landing on marker {TARGET_MARKER}")
-print(f"Descend to {LANDING_HEIGHT} m")
-navigate(x=0, y=0, z=LANDING_HEIGHT, frame_id=f'aruco_{TARGET_MARKER}', speed=0.3)
-rospy.sleep(5)
-
-telem = get_telemetry(frame_id=f'aruco_{TARGET_MARKER}')
-print(f"Height before landing: {telem.z:.2f} m")
-
-print("Smooth descent...")
-for height in [0.6, 0.4, 0.3]:
-    navigate(x=0, y=0, z=height, frame_id=f'aruco_{TARGET_MARKER}', speed=0.2)
-    rospy.sleep(3)
-    telem = get_telemetry(frame_id=f'aruco_{TARGET_MARKER}')
-    print(f"   Commanded {height:.1f} m | Current {telem.z:.2f} m")
-
-print("Initiating final landing...")
+# ===== STAGE 5: LANDING =====
+print("\n[Stage 5] Landing")
 land()
-print("Landing command sent")
+print("Landing command sent, descending...")
 
-print("Monitoring descent...")
 for i in range(15):
     rospy.sleep(1)
     telem = get_telemetry(frame_id='body')
-    print(f"   {i + 1:02d}/15 s | Height={telem.z:.2f} m")
-    if telem.z < 0.2:
-        print("Drone landed on target marker")
+    print(f"  t={i+1:02d}s | altitude={telem.z:.2f}m | armed={telem.armed}")
+    if telem.z < 0.15 and not telem.armed:
+        print("Landed successfully!")
         break
 
 print("\n" + "=" * 60)
-print("Final statistics")
-print("=" * 60)
-final_telem = get_telemetry()
-print(f"Height: {final_telem.z:.2f} m")
-print(f"Battery: {final_telem.voltage:.2f} V")
-print(f"Armed: {final_telem.armed}")
-print(f"Route: marker {START_MARKER} (0,0) -> marker {TARGET_MARKER} (1,1)")
-
-print("\n" + "=" * 60)
-print("Navigation test finished successfully")
+print("TEST COMPLETED")
 print("=" * 60)

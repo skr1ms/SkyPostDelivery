@@ -28,6 +28,7 @@ class WebSocketService:
         self.video_task: Optional[asyncio.Task] = None
         self.camera = None
         self.delivery_service = None
+        self.ros_bridge = None
 
     async def connect(self):
         while True:
@@ -80,7 +81,7 @@ class WebSocketService:
 
                 if self.video_task:
                     self.video_task.cancel()
-                if self.camera:
+                if self.ros_bridge or self.camera:
                     self.video_task = asyncio.create_task(
                         self._video_stream_loop())
 
@@ -213,7 +214,26 @@ class WebSocketService:
                     altitude = 0.0
                     status = "idle"
 
-                    if self.delivery_service and self.delivery_service.nav_controller and self.delivery_service.nav_controller.api:
+                    if self.ros_bridge:
+                        try:
+                            telemetry = self.ros_bridge.get_telemetry()
+                            if telemetry.get('battery'):
+                                battery_level = telemetry['battery'].get('voltage', 85.5)
+                            if telemetry.get('pose'):
+                                pose = telemetry['pose']
+                                latitude = pose.get('x', 0.0)
+                                longitude = pose.get('y', 0.0)
+                                altitude = pose.get('z', 0.0)
+                            if telemetry.get('state'):
+                                state = telemetry['state']
+                                if state.get('armed'):
+                                    status = "flying"
+                                elif state.get('connected'):
+                                    status = "idle"
+                        except Exception as e:
+                            logger.warning(f"Failed to get telemetry from ROS: {e}")
+                    # Fallback to navigation controller
+                    elif self.delivery_service and self.delivery_service.nav_controller and self.delivery_service.nav_controller.api:
                         try:
                             battery_level = self.delivery_service.nav_controller.api.get_battery()
                             pos = self.delivery_service.nav_controller.api.get_position('map')
@@ -250,7 +270,7 @@ class WebSocketService:
         logger.info(
             f"📹 Starting video stream loop with {settings.video_fps} FPS (interval: {frame_interval}s)")
 
-        while self.is_connected and self.camera:
+        while self.is_connected and (self.ros_bridge or self.camera):
             try:
                 await asyncio.sleep(frame_interval)
 
@@ -259,7 +279,13 @@ class WebSocketService:
                         "📹 Video loop: Not ready to send (ws/connected/drone_id missing)")
                     continue
 
-                frame_base64 = self.camera.capture_frame()
+                frame_base64 = None
+                
+                if self.ros_bridge:
+                    frame_base64 = self.ros_bridge.get_frame()
+                # Fallback to camera controller
+                elif self.camera:
+                    frame_base64 = self.camera.capture_frame()
 
                 if frame_base64:
                     frame_counter += 1
@@ -278,7 +304,7 @@ class WebSocketService:
                     else:
                         logger.debug(f"📹 Video frame #{frame_counter} sent")
                 else:
-                    logger.warning("📹 Camera returned no frame!")
+                    logger.warning("📹 No frame available from ROS or camera!")
 
             except Exception as e:
                 logger.error(f"❌ Error in video stream loop: {e}")

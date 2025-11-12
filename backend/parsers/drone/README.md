@@ -10,9 +10,18 @@
   - Provide standalone `rosrun` scripts for manual operations (takeoff, land, navigate, etc.).
 
 ### Useful Commands
-- `rosrun clover simple_flight_test.py` — sample flight between markers 131→135.
-- `python3 tools/delivery_flight.py` — run full delivery scenario (requires ROS environment).
+- `./start_drone.sh` — **main startup script** (sources ROS, runs WebSocket bridge).
+- `python3 test_scripts/simple_flight_test.py` — manual flight test between markers 131→135.
+- `python3 tools/delivery_flight.py` — standalone delivery scenario (requires ROS).
 - `pytest` in `tests/` — unit/integration tests (requires ROS mocks).
+
+### How to Run
+1. Install ROS dependencies (see `requirements.txt`).
+2. Copy `.env.example` to `.env` and configure drone settings.
+3. Source ROS: `source /opt/ros/noetic/setup.bash && source ~/catkin_ws/devel/setup.bash`.
+4. Run: `./start_drone.sh`
+
+The drone will connect to `drone-service` via WebSocket, subscribe to ROS topics (`/main_camera/image_raw`, `/mavros/battery`, etc.), and wait for delivery commands.
 
 ### Key Components
 - `app/navigation/` — Clover API wrapper, ArUco map manager, navigation controller.
@@ -37,9 +46,18 @@
   - Набор скриптов `rosrun` для ручного управления (взлёт, посадка, навигация и т.д.).
 
 ### Полезные команды
-- `rosrun clover simple_flight_test.py` — тестовый полёт между маркерами 131→135.
-- `python3 tools/delivery_flight.py` — полный сценарий доставки (требует ROS окружения).
+- `./start_drone.sh` — **основной скрипт запуска** (инициализирует ROS, запускает WebSocket-мост).
+- `python3 test_scripts/simple_flight_test.py` — ручной тестовый полёт между маркерами 131→135.
+- `python3 tools/delivery_flight.py` — автономный сценарий доставки (требует ROS).
 - `pytest` в каталоге `tests/` — тесты (нужны ROS-заглушки).
+
+### Как запустить
+1. Установить ROS-зависимости (см. `requirements.txt`).
+2. Скопировать `.env.example` в `.env` и настроить параметры дрона.
+3. Активировать ROS: `source /opt/ros/noetic/setup.bash && source ~/catkin_ws/devel/setup.bash`.
+4. Запустить: `./start_drone.sh`
+
+Дрон подключится к `drone-service` по WebSocket, подпишется на ROS-топики (`/main_camera/image_raw`, `/mavros/battery` и т.д.) и будет ожидать команды на доставку.
 
 ### Основные компоненты
 - `app/navigation/` — Clover API, менеджер карты ArUco, контроллер навигации.

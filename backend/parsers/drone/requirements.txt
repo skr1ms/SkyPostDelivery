@@ -7,7 +7,29 @@ picamera2
 pyserial
 reportlab
 pillow
+
 pytest
 pytest-asyncio
 pytest-cov
 pytest-mock
+
+# ==============================================
+# ROS DEPENDENCIES (must be installed via apt)
+# ==============================================
+# These packages CANNOT be installed via pip!
+# Install with apt on the drone's Raspberry Pi:
+#
+#   sudo apt install ros-noetic-rospy
+#   sudo apt install ros-noetic-geometry-msgs
+#   sudo apt install ros-noetic-sensor-msgs
+#   sudo apt install ros-noetic-mavros-msgs
+#   sudo apt install ros-noetic-std-srvs
+#   sudo apt install ros-noetic-cv-bridge
+#   sudo apt install ros-noetic-clover
+#
+# Source ROS before running:
+#   source /opt/ros/noetic/setup.bash
+#   source ~/catkin_ws/devel/setup.bash  # if using catkin workspace
+#
+# Run with:
+#   ./start_drone.sh
