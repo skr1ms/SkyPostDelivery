@@ -121,7 +121,8 @@ class WebSocketService:
             logger.info(f"Received message type: {incoming.type}")
 
             if incoming.type == MessageType.DELIVERY_TASK:
-                await self.on_delivery_task(incoming.payload)
+                logger.info("Received delivery task from backend")
+                await self._handle_delivery_task(incoming.payload)
             elif incoming.type == MessageType.COMMAND:
                 await self._handle_command(incoming.payload)
             else:
@@ -129,6 +130,49 @@ class WebSocketService:
 
         except Exception as e:
             logger.error(f"Error handling message: {e}")
+
+    async def _handle_delivery_task(self, payload: dict):
+        try:
+            order_id = payload.get("order_id")
+            delivery_id = payload.get("delivery_id")
+            target_marker_id = payload.get("target_aruco_id", 135)
+            home_marker_id = payload.get("home_aruco_id", 131)
+            
+            logger.info("="*60)
+            logger.info("DELIVERY TASK RECEIVED")
+            logger.info(f"  Order ID: {order_id}")
+            logger.info(f"  Delivery ID: {delivery_id}")
+            logger.info(f"  Target ArUco: {target_marker_id}")
+            logger.info(f"  Home ArUco: {home_marker_id}")
+            logger.info("="*60)
+            
+            if not self.flight_manager:
+                logger.error("Flight manager not available!")
+                return
+            
+            # Launch delivery flight script
+            success = await self.flight_manager.launch_delivery_flight(
+                aruco_id=target_marker_id,
+                home_aruco_id=home_marker_id
+            )
+            
+            if success:
+                logger.info("Delivery flight script launched successfully")
+                logger.info("Drone will:")
+                logger.info("  1. Take off to cruise altitude")
+                logger.info(f"  2. Navigate to ArUco marker {target_marker_id}")
+                logger.info("  3. Land on parcel automat")
+                logger.info("  4. Publish arrival notification")
+                logger.info("  5. Wait for drop confirmation")
+                logger.info("  6. Drop cargo")
+                logger.info(f"  7. Return to base (ArUco {home_marker_id}) after 10 seconds")
+            else:
+                logger.error("Failed to launch delivery flight script")
+                
+        except Exception as e:
+            logger.error(f"Error handling delivery task: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def _handle_command(self, payload: dict):
         command = payload.get("command")
@@ -138,25 +182,45 @@ class WebSocketService:
             order_id = payload.get("order_id")
             cell_id = payload.get("cell_id")
             internal_cell_id = payload.get("internal_cell_id")
-            logger.info(
-                f"Drop cargo command for order {order_id}, cell {cell_id}, internal {internal_cell_id}")
+            logger.info("="*60)
+            logger.info("DROP CARGO COMMAND RECEIVED")
+            logger.info(f"  Order ID: {order_id}")
+            logger.info(f"  Cell ID: {cell_id}")
+            logger.info(f"  Internal Cell ID: {internal_cell_id}")
+            logger.info("="*60)
 
-            if self.delivery_service:
-                self.delivery_service.cargo_drop_approved = True
-                self.delivery_service.target_cell_id = cell_id
-                self.delivery_service.target_internal_cell_id = internal_cell_id
+            if self.ros_bridge:
+                logger.info("Sending drop confirmation via ROS topic /drone/delivery/drop_confirm")
+                success = await self.ros_bridge.send_drop_confirmation()
+                if success:
+                    logger.info("Drop confirmation sent to drone")
+                    logger.info("Drone will now drop cargo and return to base")
+                else:
+                    logger.error("Failed to send drop confirmation")
+            else:
+                logger.error("ROS bridge not available, cannot send drop confirmation")
+                if self.delivery_service:
+                    self.delivery_service.cargo_drop_approved = True
+                    self.delivery_service.target_cell_id = cell_id
+                    self.delivery_service.target_internal_cell_id = internal_cell_id
 
         elif command == "return_to_base":
             base_marker_id = payload.get("base_marker_id", 131)
-            logger.info(
-                f"Return to base command received, target marker: {base_marker_id}")
+            logger.info("="*60)
+            logger.info("RETURN TO BASE COMMAND")
+            logger.info(f"  Target: ArUco {base_marker_id}")
+            logger.info("="*60)
 
-            if self.delivery_service:
-                asyncio.create_task(
-                    self.delivery_service.return_to_base(base_marker_id))
+            if self.flight_manager:
+                success = await self.flight_manager.launch_return_flight(
+                    home_aruco_id=base_marker_id
+                )
+                if success:
+                    logger.info("Return flight script launched")
+                else:
+                    logger.error("Failed to launch return flight")
             else:
-                logger.error(
-                    "Cannot return to base: delivery_service not available")
+                logger.error("Flight manager not available")
 
         else:
             logger.warning(f"Unknown command: {command}")

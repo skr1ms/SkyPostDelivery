@@ -3,6 +3,7 @@ from .services.websocket_service import WebSocketService
 from .services.delivery_service import DeliveryService
 from .models.schemas import DeliveryTaskPayload
 from .hardware.flight_manager import flight_manager
+from .hardware.ros_bridge import ros_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -15,17 +16,11 @@ async def handle_delivery_task(payload: dict):
         logger.info(f"Delivery task {task.delivery_id}")
         logger.info(f"Good: {task.good_id}, Target: {task.parcel_automat_id}, Marker: {task.aruco_id}")
         
-        coordinates = getattr(task, 'coordinates', '0,0')
-        coords_parts = coordinates.split(',')
-        x_coord = float(coords_parts[0]) if len(coords_parts) > 0 else 0.0
-        y_coord = float(coords_parts[1]) if len(coords_parts) > 1 else 0.0
-        
-        logger.info(f"Launching flight script: ArUco {task.aruco_id} at ({x_coord}, {y_coord})")
+        logger.info(f"Launching flight script to ArUco marker {task.aruco_id}")
         
         success = await flight_manager.launch_delivery_flight(
             aruco_id=task.aruco_id,
-            x=x_coord,
-            y=y_coord
+            home_aruco_id=131
         )
         
         if success:
@@ -38,12 +33,12 @@ async def handle_delivery_task(payload: dict):
 
 
 websocket_service = WebSocketService(on_delivery_task=handle_delivery_task)
+websocket_service.ros_bridge = ros_bridge
 
 delivery_service.set_status_callback(websocket_service.send_status_update)
 delivery_service.set_delivery_update_callback(websocket_service.send_delivery_update)
 
 websocket_service.delivery_service = delivery_service
-
 
 async def cleanup():
     await websocket_service.close()

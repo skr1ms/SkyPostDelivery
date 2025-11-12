@@ -1,4 +1,4 @@
-# ФАЙЛЫ ИЗ ЭТОЙ ДИРЕКТОРИИ ДОЛЖНЫ НАХОДИТСЯ В /home/user_name на вашей raspberry pi # Drone Flight Scripts
+# Drone Flight Scripts
 
 ## Overview
 

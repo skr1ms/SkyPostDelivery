@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Drone ROS-WebSocket Bridge
-Runs with system Python3 + ROS environment
-Bridges ROS topics to drone-service via WebSocket
-"""
+
 import asyncio
 import signal
 import logging
@@ -141,13 +137,37 @@ class DroneApplication:
                 websocket_service.flight_manager = flight_manager
 
             async def on_arrival():
-                logger.info("Handling drone arrival notification")
+                logger.info("Drone arrived at delivery location")
+                logger.info("Notifying backend via WebSocket...")
+                
+                from app.models.schemas import DeliveryUpdatePayload
+                if websocket_service.is_connected and settings.drone_id:
+                    await websocket_service.send_delivery_update(
+                        DeliveryUpdatePayload(
+                            delivery_id="current",  
+                            drone_status="arrived_at_locker"
+                        )
+                    )
                 
             async def on_drop_ready():
-                logger.info("Handling cargo drop ready notification")
+                logger.info("Cargo drop ready - drone waiting for confirmation")
+                logger.info("Backend should confirm cell is open and ready for drop")
+                
                 
             async def on_home():
-                logger.info("Handling home arrival notification")
+                logger.info("Drone returned to home base")
+                logger.info("Mission completed, drone is now IDLE")
+                
+                from app.models.schemas import StatusUpdatePayload, DroneStatus, Position
+                if websocket_service.is_connected and settings.drone_id:
+                    await websocket_service.send_status_update(
+                        StatusUpdatePayload(
+                            status=DroneStatus.IDLE,
+                            battery_level=100.0,  # Will be updated from ROS
+                            position=Position(latitude=0.0, longitude=0.0, altitude=0.0),
+                            speed=0.0
+                        )
+                    )
             
             ros_topic_bridge.set_arrival_callback(on_arrival)
             ros_topic_bridge.set_drop_ready_callback(on_drop_ready)

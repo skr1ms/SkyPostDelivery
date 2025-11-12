@@ -13,7 +13,7 @@ class FlightScriptManager:
         self.delivery_script = self.scripts_dir / "delivery_flight.py"
         self.return_script = self.scripts_dir / "flight_back.py"
     
-    async def launch_delivery_flight(self, aruco_id: int, x: float, y: float) -> bool:
+    async def launch_delivery_flight(self, aruco_id: int, home_aruco_id: int = 131) -> bool:
         try:
             if self.current_process and self.current_process.poll() is None:
                 logger.warning("Flight script already running")
@@ -23,8 +23,7 @@ class FlightScriptManager:
                 "python3",
                 str(self.delivery_script),
                 str(aruco_id),
-                str(x),
-                str(y)
+                str(home_aruco_id)
             ]
             
             logger.info(f"Launching delivery flight: {' '.join(cmd)}")
