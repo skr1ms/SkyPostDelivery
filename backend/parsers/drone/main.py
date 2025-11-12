@@ -104,7 +104,7 @@ class DroneApplication:
         """Initialize ROS node and subscribers in separate thread"""
         try:
             logger.info("Initializing ROS node")
-            rospy.init_node('drone_parser', anonymous=False)
+            rospy.init_node('drone_parser', anonymous=False, disable_signals=True)
             
             self.ros_bridge = ROSBridge()
             
