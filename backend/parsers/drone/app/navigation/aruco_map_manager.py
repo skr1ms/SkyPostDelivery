@@ -29,14 +29,19 @@ class ArucoMapManager:
                         continue
 
                     marker_id = int(parts[0])
-                    x = float(parts[1])
-                    y = float(parts[2])
-                    z = float(parts[3])
-
-                    self.markers[marker_id] = (x, y, z)
 
                     if len(parts) >= 5:
-                        self.marker_sizes[marker_id] = float(parts[4])
+                        size = float(parts[1])
+                        x = float(parts[2])
+                        y = float(parts[3])
+                        z = float(parts[4])
+                        self.marker_sizes[marker_id] = size
+                    else:
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        z = float(parts[3])
+
+                    self.markers[marker_id] = (x, y, z)
 
             logger.info(f"Loaded {len(self.markers)} markers from map")
             return True

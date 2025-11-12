@@ -61,7 +61,8 @@ class WebSocketService:
                 await self._send_initial_status()
 
                 if self.ros_bridge:
-                    logger.info("Using ROS camera stream, skipping local camera initialization")
+                    logger.info(
+                        "Using ROS camera stream, skipping local camera initialization")
                     self.camera = None
                 else:
                     try:
@@ -127,32 +128,33 @@ class WebSocketService:
 
         except Exception as e:
             logger.error(f"Error handling message: {e}")
-    
+
     async def _handle_command(self, payload: dict):
-        """Обработка команд от drone-service"""
         command = payload.get("command")
         logger.info(f"Received command: {command}")
-        
+
         if command == "drop_cargo":
             order_id = payload.get("order_id")
             cell_id = payload.get("cell_id")
-            logger.info(f"Drop cargo command for order {order_id}, cell {cell_id}")
-            
-            # Уведомляем delivery_service что можно сбрасывать груз
+            logger.info(
+                f"Drop cargo command for order {order_id}, cell {cell_id}")
+
             if self.delivery_service:
                 self.delivery_service.cargo_drop_approved = True
                 self.delivery_service.target_cell_id = cell_id
-        
+
         elif command == "return_to_base":
             base_marker_id = payload.get("base_marker_id", 131)
-            logger.info(f"Return to base command received, target marker: {base_marker_id}")
-            
-            # Запускаем возврат на базу в фоне
+            logger.info(
+                f"Return to base command received, target marker: {base_marker_id}")
+
             if self.delivery_service:
-                asyncio.create_task(self.delivery_service.return_to_base(base_marker_id))
+                asyncio.create_task(
+                    self.delivery_service.return_to_base(base_marker_id))
             else:
-                logger.error("Cannot return to base: delivery_service not available")
-        
+                logger.error(
+                    "Cannot return to base: delivery_service not available")
+
         else:
             logger.warning(f"Unknown command: {command}")
 
@@ -204,7 +206,7 @@ class WebSocketService:
             "ip_address": settings.drone_ip
         }
         await self.websocket.send(json.dumps(registration))
-        logger.info(f"📡 Registration sent with IP: {settings.drone_ip}")
+        logger.info(f"Registration sent with IP: {settings.drone_ip}")
 
     async def _heartbeat_loop(self):
         while self.is_connected:
@@ -222,7 +224,8 @@ class WebSocketService:
                         try:
                             telemetry = self.ros_bridge.get_telemetry()
                             if telemetry.get('battery'):
-                                battery_level = telemetry['battery'].get('voltage', 85.5)
+                                battery_level = telemetry['battery'].get(
+                                    'voltage', 85.5)
                             if telemetry.get('pose'):
                                 pose = telemetry['pose']
                                 latitude = pose.get('x', 0.0)
@@ -235,19 +238,21 @@ class WebSocketService:
                                 elif state.get('connected'):
                                     status = "idle"
                         except Exception as e:
-                            logger.warning(f"Failed to get telemetry from ROS: {e}")
-                    # Fallback to navigation controller
+                            logger.warning(
+                                f"Failed to get telemetry from ROS: {e}")
                     elif self.delivery_service and self.delivery_service.nav_controller and self.delivery_service.nav_controller.api:
                         try:
                             battery_level = self.delivery_service.nav_controller.api.get_battery()
-                            pos = self.delivery_service.nav_controller.api.get_position('map')
+                            pos = self.delivery_service.nav_controller.api.get_position(
+                                'map')
                             if pos:
                                 latitude = pos[0]
                                 longitude = pos[1]
                                 altitude = pos[2]
                             status = self.delivery_service.nav_controller.state.value
                         except Exception as e:
-                            logger.warning(f"Failed to get telemetry for heartbeat: {e}")
+                            logger.warning(
+                                f"Failed to get telemetry for heartbeat: {e}")
 
                     heartbeat = {
                         "type": "heartbeat",
@@ -284,7 +289,7 @@ class WebSocketService:
                     continue
 
                 frame_base64 = None
-                
+
                 if self.ros_bridge:
                     frame_base64 = self.ros_bridge.get_frame()
                 elif self.camera:

@@ -18,22 +18,30 @@ class CloverAPI:
 
     def initialize(self) -> bool:
         try:
+            if not rospy.core.is_initialized():
+                rospy.init_node('drone_delivery',
+                                anonymous=True, disable_signals=True)
+
             if not self.node_initialized:
-                rospy.init_node('drone_delivery', anonymous=True)
+                from clover import srv
+
+                rospy.wait_for_service('navigate')
+                rospy.wait_for_service('get_telemetry')
+                rospy.wait_for_service('land')
+
+                self.navigate = rospy.ServiceProxy('navigate', srv.Navigate)
+                self.get_telemetry_service = rospy.ServiceProxy(
+                    'get_telemetry', srv.GetTelemetry)
+                self.land_service = rospy.ServiceProxy('land', Trigger)
+
+                if self.rangefinder_sub is None:
+                    self.rangefinder_sub = rospy.Subscriber(
+                        '/rangefinder/range',
+                        Range,
+                        self._rangefinder_callback
+                    )
+
                 self.node_initialized = True
-
-            from clover import srv
-
-            self.navigate = rospy.ServiceProxy('navigate', srv.Navigate)
-            self.get_telemetry_service = rospy.ServiceProxy(
-                'get_telemetry', srv.GetTelemetry)
-            self.land_service = rospy.ServiceProxy('land', Trigger)
-
-            self.rangefinder_sub = rospy.Subscriber(
-                '/rangefinder/range',
-                Range,
-                self._rangefinder_callback
-            )
 
             logger.info("Clover API initialized with rangefinder")
             return True
