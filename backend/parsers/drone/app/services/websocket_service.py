@@ -304,9 +304,9 @@ class WebSocketService:
 
                     if frame_counter % 10 == 0:
                         logger.info(
-                            f"📹 Video frame #{frame_counter} sent, size: {len(frame_base64)} bytes")
+                            f"Video frame #{frame_counter} sent, size: {len(frame_base64)} bytes")
                     else:
-                        logger.debug(f"📹 Video frame #{frame_counter} sent")
+                        logger.debug(f"Video frame #{frame_counter} sent")
                 else:
                     logger.warning("📹 No frame available from ROS or camera!")
 
