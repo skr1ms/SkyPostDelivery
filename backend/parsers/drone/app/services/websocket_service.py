@@ -272,7 +272,7 @@ class WebSocketService:
         frame_counter = 0
 
         logger.info(
-            f"📹 Starting video stream loop with {settings.video_fps} FPS (interval: {frame_interval}s)")
+            f"Starting video stream loop with {settings.video_fps} FPS (interval: {frame_interval}s)")
 
         while self.is_connected and (self.ros_bridge or self.camera):
             try:
@@ -280,14 +280,13 @@ class WebSocketService:
 
                 if not self.websocket or not self.is_connected or not settings.drone_id:
                     logger.warning(
-                        "📹 Video loop: Not ready to send (ws/connected/drone_id missing)")
+                        "Video loop: Not ready to send (ws/connected/drone_id missing)")
                     continue
 
                 frame_base64 = None
                 
                 if self.ros_bridge:
                     frame_base64 = self.ros_bridge.get_frame()
-                # Fallback to camera controller
                 elif self.camera:
                     frame_base64 = self.camera.capture_frame()
 
@@ -308,10 +307,10 @@ class WebSocketService:
                     else:
                         logger.debug(f"Video frame #{frame_counter} sent")
                 else:
-                    logger.warning("📹 No frame available from ROS or camera!")
+                    logger.warning("No frame available from ROS or camera!")
 
             except Exception as e:
-                logger.error(f"❌ Error in video stream loop: {e}")
+                logger.error(f"Error in video stream loop: {e}")
                 break
 
     async def _reconnect(self):
