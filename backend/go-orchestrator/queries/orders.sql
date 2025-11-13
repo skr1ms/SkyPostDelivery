@@ -7,6 +7,10 @@ RETURNING *;
 SELECT * FROM orders
 WHERE id = $1;
 
+-- name: GetOrderByLockerCellID :one
+SELECT * FROM orders
+WHERE locker_cell_id = $1;
+
 -- name: ListOrdersByUserID :many
 SELECT 
     o.id,

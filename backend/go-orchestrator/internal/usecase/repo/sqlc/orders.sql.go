@@ -77,6 +77,26 @@ func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (Order, error)
 	return i, err
 }
 
+const getOrderByLockerCellID = `-- name: GetOrderByLockerCellID :one
+SELECT id, user_id, good_id, parcel_automat_id, locker_cell_id, status, created_at FROM orders
+WHERE locker_cell_id = $1
+`
+
+func (q *Queries) GetOrderByLockerCellID(ctx context.Context, lockerCellID pgtype.UUID) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByLockerCellID, lockerCellID)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.GoodID,
+		&i.ParcelAutomatID,
+		&i.LockerCellID,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listOrders = `-- name: ListOrders :many
 SELECT id, user_id, good_id, parcel_automat_id, locker_cell_id, status, created_at FROM orders
 ORDER BY created_at DESC

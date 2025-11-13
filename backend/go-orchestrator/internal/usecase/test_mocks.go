@@ -108,6 +108,14 @@ func (m *MockOrderRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.Orde
 	return args.Get(0).(*entity.Order), args.Error(1)
 }
 
+func (m *MockOrderRepo) GetByLockerCellID(ctx context.Context, lockerCellID uuid.UUID) (*entity.Order, error) {
+	args := m.Called(ctx, lockerCellID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Order), args.Error(1)
+}
+
 func (m *MockOrderRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Order, error) {
 	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {

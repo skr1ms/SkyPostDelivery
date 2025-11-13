@@ -73,6 +73,18 @@ func (r *OrderRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.Order, e
 	return toEntityOrder(o), nil
 }
 
+func (r *OrderRepo) GetByLockerCellID(ctx context.Context, lockerCellID uuid.UUID) (*entity.Order, error) {
+	cellID := pgtype.UUID{
+		Bytes: lockerCellID,
+		Valid: true,
+	}
+	o, err := r.q.GetOrderByLockerCellID(ctx, cellID)
+	if err != nil {
+		return nil, fmt.Errorf("OrderRepo - GetByLockerCellID - q.GetOrderByLockerCellID: %w", err)
+	}
+	return toEntityOrder(o), nil
+}
+
 func (r *OrderRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Order, error) {
 	rows, err := r.q.ListOrdersByUserID(ctx, userID)
 	if err != nil {

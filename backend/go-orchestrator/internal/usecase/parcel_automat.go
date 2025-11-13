@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/hitech-ekb/internal/controller/http/v1/request"
@@ -229,25 +230,20 @@ func (uc *ParcelAutomatUseCase) ConfirmPickup(ctx context.Context, cellIDs []uui
 				return fmt.Errorf("parcel automat usecase - ConfirmPickup - lockerRepo.UpdateCellStatus: %w", err)
 			}
 
-			// Find order by cell_id and release internal cell
-			orders, err := uc.orderRepo.List(ctx)
+			order, err := uc.orderRepo.GetByLockerCellID(ctx, cellID)
 			if err == nil {
-				for _, order := range orders {
-					if order.LockerCellID != nil && *order.LockerCellID == cellID {
-						delivery, err := uc.deliveryRepo.GetByOrderID(ctx, order.ID)
-						if err == nil && delivery.InternalLockerCellID != nil {
-							if uc.internalLockerRepo != nil {
-								if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "available"); err != nil {
-									log.Printf("[PARCEL_AUTOMAT] Failed to release internal cell %s: %v", *delivery.InternalLockerCellID, err)
-								} else {
-									log.Printf("[PARCEL_AUTOMAT] Released internal cell %s for order %s", *delivery.InternalLockerCellID, order.ID)
-								}
-							}
+				delivery, err := uc.deliveryRepo.GetByOrderID(ctx, order.ID)
+				if err == nil && delivery.InternalLockerCellID != nil {
+					if uc.internalLockerRepo != nil {
+						if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "available"); err != nil {
+							log.Printf("[PARCEL_AUTOMAT] Failed to release internal cell %s: %v", *delivery.InternalLockerCellID, err)
+						} else {
+							log.Printf("[PARCEL_AUTOMAT] Released internal cell %s for order %s", *delivery.InternalLockerCellID, order.ID)
 						}
-						// Update order status to completed
-						uc.orderRepo.UpdateStatus(ctx, order.ID, "completed")
-						break
 					}
+				}
+				if _, err := uc.orderRepo.UpdateStatus(ctx, order.ID, "completed"); err != nil {
+					log.Printf("[PARCEL_AUTOMAT] Failed to update order status: %v", err)
 				}
 			}
 		}
@@ -279,7 +275,6 @@ func (uc *ParcelAutomatUseCase) PrepareCell(ctx context.Context, orderID, parcel
 	var internalDoorID *uuid.UUID
 	delivery, err := uc.deliveryRepo.GetByOrderID(ctx, order.ID)
 	if err != nil {
-	if err != nil {
 		fmt.Printf("parcel automat usecase - PrepareCell - deliveryRepo.GetByOrderID warning: %v\n", err)
 	} else if delivery.InternalLockerCellID != nil {
 		internalDoorID = delivery.InternalLockerCellID
@@ -292,6 +287,5 @@ func (uc *ParcelAutomatUseCase) PrepareCell(ctx context.Context, orderID, parcel
 			}
 		}
 	}
-
 	return cell.ID, internalDoorID, nil
 }

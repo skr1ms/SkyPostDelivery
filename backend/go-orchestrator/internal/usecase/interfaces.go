@@ -52,6 +52,7 @@ type (
 	OrderRepo interface {
 		Create(ctx context.Context, userID, goodID, parcelAutomatID uuid.UUID, status string) (*entity.Order, error)
 		GetByID(ctx context.Context, id uuid.UUID) (*entity.Order, error)
+		GetByLockerCellID(ctx context.Context, lockerCellID uuid.UUID) (*entity.Order, error)
 		ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Order, error)
 		ListByUserIDWithGoods(ctx context.Context, userID uuid.UUID) ([]struct {
 			Order *entity.Order
