@@ -67,11 +67,11 @@ func Run(cfg *config.Config) {
 	}
 	log.Println("Delivery worker started successfully")
 
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(cfg.GinMode.Mode)
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.RequestLogger())
+	router.Use(middleware.Logger())
 	router.Use(middleware.PrometheusMiddleware())
 	router.Use(middleware.CORS())
 

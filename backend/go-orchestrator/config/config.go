@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -22,6 +23,7 @@ type (
 		AdminPanelURL `yaml:"admin_panel_url"`
 		FirstAdmin    `yaml:"full_admin"`
 		SecondAdmin   `yaml:"second_admin"`
+		GinMode       `yaml:"log_level"`
 	}
 
 	App struct {
@@ -94,6 +96,10 @@ type (
 		Password  string
 		CreatedAt string
 	}
+
+	GinMode struct {
+		Mode string
+	}
 )
 
 func New() (*Config, error) {
@@ -159,6 +165,9 @@ func New() (*Config, error) {
 			Password:  getEnv("SECOND_ADMIN_PASSWORD", ""),
 			CreatedAt: getEnv("SECOND_ADMIN_CREATED_AT", ""),
 		},
+		GinMode: GinMode{
+			Mode: getEnv("GIN_MODE", "realese"),
+		},
 	}
 
 	return cfg, nil
@@ -166,7 +175,7 @@ func New() (*Config, error) {
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
-		return value
+		return strings.TrimSpace(value)
 	}
 	return defaultValue
 }

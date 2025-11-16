@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -16,6 +17,7 @@ type (
 		MinIO            `yaml:"minio"`
 		OrchestratorGRPC `yaml:"orchestrator_grpc"`
 		WebSocket        `yaml:"websocket"`
+		GinMode          `yaml:"log_level"`
 	}
 
 	App struct {
@@ -50,6 +52,10 @@ type (
 	WebSocket struct {
 		BroadcastInterval int
 	}
+
+	GinMode struct {
+		Mode string
+	}
 )
 
 func New() (*Config, error) {
@@ -82,6 +88,9 @@ func New() (*Config, error) {
 		WebSocket: WebSocket{
 			BroadcastInterval: getEnvInt("WEBSOCKET_BROADCAST_INTERVAL", 5),
 		},
+		GinMode: GinMode{
+			Mode: getEnv("GIN_MODE", "release"),
+		},
 	}
 
 	return cfg, nil
@@ -89,7 +98,7 @@ func New() (*Config, error) {
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
-		return value
+		return strings.TrimSpace(value)
 	}
 	return defaultValue
 }
