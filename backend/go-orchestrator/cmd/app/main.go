@@ -3,29 +3,24 @@ package main
 import (
 	"log"
 
-	"github.com/skr1ms/hitech-ekb/config"
-	_ "github.com/skr1ms/hitech-ekb/docs"
-	"github.com/skr1ms/hitech-ekb/internal/app"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
+	_ "github.com/skr1ms/SkyPostDelivery/go-orchestrator/docs"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/app"
 )
 
-// @title           hiTech Drone Delivery API
+// @title           SkyPost Delivery API
 // @version         1.0
-// @description     API для системы доставки посылок дронами
+// @description     API для системы доставки посылок
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   API Support
-// @contact.email  support@hitech.com
+// @contact.email  skr1ms13666@gmail.com
 
 // @license.name  MIT
 // @license.url   https://opensource.org/licenses/MIT
 
 // @host      localhost:8080
 // @BasePath  /api/v1
-
-// @securityDefinitions.apikey Bearer
-// @in header
-// @name Authorization
-// @description Введите токен в формате: Bearer <token>
 
 func main() {
 	cfg, err := config.New()

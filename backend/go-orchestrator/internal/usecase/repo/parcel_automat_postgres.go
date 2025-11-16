@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/skr1ms/hitech-ekb/internal/entity"
-	"github.com/skr1ms/hitech-ekb/internal/usecase/repo/sqlc"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/repo/sqlc"
 )
 
 type ParcelAutomatRepo struct {

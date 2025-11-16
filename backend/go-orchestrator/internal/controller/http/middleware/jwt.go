@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/pkg/jwt"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
 )
 
 const (

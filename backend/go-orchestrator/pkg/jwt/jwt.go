@@ -44,9 +44,9 @@ func (j *JWTService) GenerateTokenPair(userID uuid.UUID, email, name, role strin
 	refreshExpiry := now.Add(j.refreshTTL)
 
 	accessClaims := &CustomClaims{
-		UserID: userID,
-		Email:  email,
-		FullName:   name,
+		UserID:   userID,
+		Email:    email,
+		FullName: name,
 		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(accessExpiry),
@@ -57,9 +57,9 @@ func (j *JWTService) GenerateTokenPair(userID uuid.UUID, email, name, role strin
 	}
 
 	refreshClaims := &CustomClaims{
-		UserID: userID,
-		Email:  email,
-		FullName:   name,
+		UserID:   userID,
+		Email:    email,
+		FullName: name,
 		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(refreshExpiry),

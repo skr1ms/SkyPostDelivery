@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/controller/http/v1/response"
-	_ "github.com/skr1ms/hitech-ekb/internal/entity"
-	"github.com/skr1ms/hitech-ekb/internal/usecase"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/v1/response"
+	_ "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase"
 )
 
 type lockerRoutes struct {

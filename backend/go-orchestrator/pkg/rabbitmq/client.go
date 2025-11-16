@@ -102,10 +102,10 @@ func (c *Client) declareQueues(ch *amqp.Channel) error {
 	for queueName, args := range queues {
 		_, err := ch.QueueDeclare(
 			queueName,
-			true,  
-			false, 
-			false, 
-			false, 
+			true,
+			false,
+			false,
+			false,
 			args,
 		)
 		if err != nil {
@@ -139,10 +139,10 @@ func (c *Client) Publish(ctx context.Context, queueName string, message interfac
 
 	err = ch.PublishWithContext(
 		ctx,
-		"",        
-		queueName, 
-		true,      
-		false,     
+		"",
+		queueName,
+		true,
+		false,
 		amqp.Publishing{
 			ContentType:  "application/json",
 			Body:         body,
@@ -180,12 +180,12 @@ func (c *Client) Consume(queueName string, handler func([]byte) error) error {
 
 	msgs, err := ch.Consume(
 		queueName,
-		"",    
-		false, 
-		false, 
-		false, 
-		false, 
-		nil,   
+		"",
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register consumer: %w", err)

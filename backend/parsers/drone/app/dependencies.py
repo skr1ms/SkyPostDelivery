@@ -1,13 +1,10 @@
 import logging
 from .services.websocket_service import WebSocketService
-from .services.delivery_service import DeliveryService
 from .models.schemas import DeliveryTaskPayload
 from .hardware.flight_manager import flight_manager
 from .hardware.ros_bridge import ros_bridge
 
 logger = logging.getLogger(__name__)
-
-delivery_service = DeliveryService()
 
 
 async def handle_delivery_task(payload: dict):
@@ -35,11 +32,5 @@ async def handle_delivery_task(payload: dict):
 websocket_service = WebSocketService(on_delivery_task=handle_delivery_task)
 websocket_service.ros_bridge = ros_bridge
 
-delivery_service.set_status_callback(websocket_service.send_status_update)
-delivery_service.set_delivery_update_callback(websocket_service.send_delivery_update)
-
-websocket_service.delivery_service = delivery_service
-
 async def cleanup():
     await websocket_service.close()
-    await delivery_service.shutdown()

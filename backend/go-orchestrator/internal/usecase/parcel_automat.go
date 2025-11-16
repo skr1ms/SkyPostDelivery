@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/controller/http/v1/request"
-	"github.com/skr1ms/hitech-ekb/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/v1/request"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
 )
 
 type ParcelAutomatUseCase struct {

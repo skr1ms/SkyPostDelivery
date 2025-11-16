@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/skr1ms/hitech-ekb/pkg/rabbitmq"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq"
 )
 
 func (uc *OrderUseCase) StartPendingOrdersWorker(ctx context.Context, interval time.Duration) {

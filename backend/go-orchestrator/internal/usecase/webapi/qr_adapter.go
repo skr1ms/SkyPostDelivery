@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/pkg/qr"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 )
 
 type QRAdapter struct {

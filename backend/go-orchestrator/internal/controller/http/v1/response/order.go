@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
 )
 
 type OrderWithGood struct {

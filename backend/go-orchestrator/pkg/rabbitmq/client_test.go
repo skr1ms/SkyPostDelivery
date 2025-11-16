@@ -298,7 +298,7 @@ func TestDroneStatusUpdate_RoundTrip(t *testing.T) {
 
 func TestDeliveryTask_HighPriority(t *testing.T) {
 	task := DeliveryTask{
-		Priority:        10,
+		Priority: 10,
 	}
 
 	assert.Equal(t, 10, task.Priority)
@@ -307,7 +307,7 @@ func TestDeliveryTask_HighPriority(t *testing.T) {
 
 func TestDeliveryTask_LowPriority(t *testing.T) {
 	task := DeliveryTask{
-		Priority:        0,
+		Priority: 0,
 	}
 
 	assert.Equal(t, 0, task.Priority)
@@ -316,10 +316,10 @@ func TestDeliveryTask_LowPriority(t *testing.T) {
 
 func TestDeliveryTask_DimensionsValidation(t *testing.T) {
 	task := DeliveryTask{
-		Height:          10.0,
-		Length:          20.0,
-		Width:           15.0,
-		Weight:          5.0,
+		Height: 10.0,
+		Length: 20.0,
+		Width:  15.0,
+		Weight: 5.0,
 	}
 
 	assert.Positive(t, task.Height)
@@ -364,7 +364,7 @@ func TestDroneStatusUpdate_StatusValues(t *testing.T) {
 	for _, statusValue := range validStatuses {
 		t.Run(statusValue, func(t *testing.T) {
 			status := DroneStatusUpdate{
-				Status:       statusValue,
+				Status: statusValue,
 			}
 
 			assert.Equal(t, statusValue, status.Status)

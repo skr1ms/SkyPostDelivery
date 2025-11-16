@@ -2,8 +2,8 @@ package v1
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/skr1ms/hitech-ekb/internal/controller/http/middleware"
-	"github.com/skr1ms/hitech-ekb/internal/usecase"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/middleware"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

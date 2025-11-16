@@ -142,12 +142,25 @@ class DroneApplication:
                 
                 from app.models.schemas import DeliveryUpdatePayload
                 if websocket_service.is_connected and settings.drone_id:
-                    await websocket_service.send_delivery_update(
-                        DeliveryUpdatePayload(
-                            delivery_id="current",  
-                            drone_status="arrived_at_locker"
+                    current_task = websocket_service.current_delivery_task
+                    if current_task:
+                        await websocket_service.send_delivery_update(
+                            DeliveryUpdatePayload(
+                                delivery_id=current_task.get("delivery_id", ""),
+                                drone_status="arrived_at_destination",
+                                order_id=current_task.get("order_id"),
+                                parcel_automat_id=current_task.get("parcel_automat_id")
+                            )
                         )
-                    )
+                        logger.info(f"Sent arrival notification with order_id={current_task.get('order_id')}, parcel_automat_id={current_task.get('parcel_automat_id')}")
+                    else:
+                        logger.warning("No current delivery task found, cannot send arrival notification")
+                        await websocket_service.send_delivery_update(
+                            DeliveryUpdatePayload(
+                                delivery_id="unknown",
+                                drone_status="arrived_at_destination"
+                            )
+                        )
                 
             async def on_drop_ready():
                 logger.info("Cargo drop ready - drone waiting for confirmation")

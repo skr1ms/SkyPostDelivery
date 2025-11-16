@@ -1,4 +1,4 @@
-module github.com/skr1ms/hitech-ekb
+module github.com/skr1ms/SkyPostDelivery/go-orchestrator
 
 go 1.25.3
 

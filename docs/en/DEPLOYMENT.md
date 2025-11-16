@@ -169,7 +169,7 @@
 | Go orchestrator gRPC | 50052 (default) | `GO_GRPC_PORT` |
 | Go orchestrator metrics | 9091 | Compose static mapping |
 | Drone service HTTP/WebSocket | 8081 | `DRONE_SERVICE_HTTP_PORT` |
-| Drone service gRPC | 50051 | `PYTHON_GRPC_PORT` |
+| Drone service gRPC | 50051 | `DRONE_SERVICE_GRPC_PORT` |
 | Drone service metrics | 9092 | Compose static mapping |
 | PostgreSQL | 5432 (5433 on dev host) | `POSTGRES_PORT`/Compose |
 | MinIO API / Console | 9000 / 9001 | Env |

@@ -83,7 +83,7 @@ Mobile App ──REST──> Go Orchestrator <──REST── Admin Panel
 ## 6. Deployment Topology
 
 - **Docker Compose** templates for dev (`docker-compose.dev.yml`), staging/production (`docker-compose.prod.yml`), and CI/CD (`docker-compose.cicd.yml`).
-- Core services run within a shared network (`hitech-network`).
+- Core services run within a shared network (`skypost-delivery-network`).
 - Nginx reverse proxy fronts public endpoints (`/api`, `/ws`, admin panel, Grafana, MinIO, RabbitMQ UI).
 - GitLab CI builds/pushes images for orchestrator, drone-service, and admin panel; deploy jobs pull and `docker compose up` on target servers.
 

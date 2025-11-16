@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/pkg/push"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/push"
 )
 
 type NotificationUseCase struct {

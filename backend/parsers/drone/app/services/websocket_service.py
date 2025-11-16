@@ -27,9 +27,9 @@ class WebSocketService:
         self.heartbeat_task: Optional[asyncio.Task] = None
         self.video_task: Optional[asyncio.Task] = None
         self.camera = None
-        self.delivery_service = None
         self.ros_bridge = None
         self.flight_manager = None
+        self.current_delivery_task: Optional[dict] = None
 
     async def connect(self):
         while True:
@@ -135,13 +135,22 @@ class WebSocketService:
         try:
             order_id = payload.get("order_id")
             delivery_id = payload.get("delivery_id")
+            parcel_automat_id = payload.get("parcel_automat_id")
             target_marker_id = payload.get("target_aruco_id", 135)
             home_marker_id = payload.get("home_aruco_id", 131)
+            
+            # Сохраняем текущую задачу доставки для использования при прибытии
+            self.current_delivery_task = {
+                "order_id": order_id,
+                "delivery_id": delivery_id,
+                "parcel_automat_id": parcel_automat_id
+            }
             
             logger.info("="*60)
             logger.info("DELIVERY TASK RECEIVED")
             logger.info(f"  Order ID: {order_id}")
             logger.info(f"  Delivery ID: {delivery_id}")
+            logger.info(f"  Parcel Automat ID: {parcel_automat_id}")
             logger.info(f"  Target ArUco: {target_marker_id}")
             logger.info(f"  Home ArUco: {home_marker_id}")
             logger.info("="*60)
@@ -199,10 +208,6 @@ class WebSocketService:
                     logger.error("Failed to send drop confirmation")
             else:
                 logger.error("ROS bridge not available, cannot send drop confirmation")
-                if self.delivery_service:
-                    self.delivery_service.cargo_drop_approved = True
-                    self.delivery_service.target_cell_id = cell_id
-                    self.delivery_service.target_internal_cell_id = internal_cell_id
 
         elif command == "return_to_base":
             base_marker_id = payload.get("base_marker_id", 131)
@@ -307,19 +312,6 @@ class WebSocketService:
                         except Exception as e:
                             logger.warning(
                                 f"Failed to get telemetry from ROS: {e}")
-                    elif self.delivery_service and self.delivery_service.nav_controller and self.delivery_service.nav_controller.api:
-                        try:
-                            battery_level = self.delivery_service.nav_controller.api.get_battery()
-                            pos = self.delivery_service.nav_controller.api.get_position(
-                                'map')
-                            if pos:
-                                latitude = pos[0]
-                                longitude = pos[1]
-                                altitude = pos[2]
-                            status = self.delivery_service.nav_controller.state.value
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to get telemetry for heartbeat: {e}")
 
                     heartbeat = {
                         "type": "heartbeat",

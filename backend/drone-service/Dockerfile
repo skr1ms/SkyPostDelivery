@@ -1,26 +1,24 @@
-FROM python:3.14-slim
+FROM golang:1.25.3-alpine AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache git
 
-COPY backend/drone-service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY backend/drone-service/ .
-COPY proto/ /tmp/proto/
+COPY . .
 
-RUN python -m grpc_tools.protoc \
-    -I/tmp/proto \
-    --python_out=./proto \
-    --grpc_python_out=./proto \
-    --pyi_out=./proto \
-    /tmp/proto/orchestrator.proto && \
-    sed -i 's/^import orchestrator_pb2/from . import orchestrator_pb2/g' proto/orchestrator_pb2_grpc.py
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o drone-service ./cmd/app
 
-EXPOSE 50051 8000
+FROM alpine:latest
 
-CMD ["python", "main.py"]
+RUN apk --no-cache add ca-certificates
 
+WORKDIR /root/
+
+COPY --from=builder /app/drone-service .
+
+EXPOSE 8081
+
+CMD ["./drone-service"]

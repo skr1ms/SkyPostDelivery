@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/usecase"
-	pb "github.com/skr1ms/hitech-ekb/pkg/pb"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase"
+	pb "github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/pb"
 )
 
 type OrchestratorServer struct {

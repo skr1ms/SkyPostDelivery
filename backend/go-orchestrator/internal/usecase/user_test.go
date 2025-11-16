@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/entity"
-	"github.com/skr1ms/hitech-ekb/pkg/jwt"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"

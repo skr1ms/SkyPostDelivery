@@ -2,7 +2,7 @@ package response
 
 import (
 	"github.com/google/uuid"
-	"github.com/skr1ms/hitech-ekb/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
 )
 
 type UserRegister struct {

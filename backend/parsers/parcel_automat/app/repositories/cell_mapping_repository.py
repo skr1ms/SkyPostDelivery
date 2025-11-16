@@ -15,13 +15,16 @@ class CellMappingRepository:
         self.mapping_file.parent.mkdir(parents=True, exist_ok=True)
 
     def load_mapping(self) -> Dict[str, Dict[str, str]]:
+        logger.info(f"Loading mapping from: {self.mapping_file.absolute()}")
         if not self.mapping_file.exists():
-            logger.info(f"Mapping file not found: {self.mapping_file}")
+            logger.warning(f"Mapping file not found: {self.mapping_file.absolute()}")
+            logger.warning(f"Current working directory: {Path.cwd()}")
             return {}
         try:
             with open(self.mapping_file, 'r', encoding='utf-8') as f:
                 mapping = json.load(f)
-                logger.info(f"Loaded mapping with {len(mapping)} cells")
+                logger.info(f"Loaded mapping with {len(mapping)} cells from {self.mapping_file.absolute()}")
+                logger.debug(f"Mapping content: {mapping}")
                 return mapping
         except Exception as e:
             logger.error(f"Failed to load mapping: {e}")
@@ -53,9 +56,12 @@ class CellMappingRepository:
 
     def get_cell_number(self, cell_uuid: str) -> Optional[int]:
         mapping = self.load_mapping()
+        logger.debug(f"Searching for UUID {cell_uuid} in mapping with {len(mapping)} entries")
         for cell_num, cell_data in mapping.items():
             if cell_data.get("cell_uuid") == cell_uuid:
+                logger.info(f"Found UUID {cell_uuid} -> cell number {cell_num}")
                 return int(cell_num)
+        logger.warning(f"UUID {cell_uuid} not found in mapping. Available UUIDs: {[data.get('cell_uuid') for data in mapping.values()]}")
         return None
 
     def clear_mapping(self) -> None:

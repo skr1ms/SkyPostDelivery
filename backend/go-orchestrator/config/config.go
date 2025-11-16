@@ -34,9 +34,7 @@ type (
 	}
 
 	GRPC struct {
-		Port            string
-		DroneServiceURL string
-		QRServiceURL    string
+		Port string
 	}
 
 	PG struct {
@@ -103,25 +101,23 @@ func New() (*Config, error) {
 
 	cfg := &Config{
 		App: App{
-			Name:    getEnv("APP_NAME", "hitech-orchestrator"),
+			Name:    getEnv("APP_NAME", "skypost-delivery"),
 			Version: getEnv("APP_VERSION", "1.0.0"),
 		},
 		HTTP: HTTP{
-			Port: getEnv("HTTP_PORT", "8080"),
+			Port: getEnv("GO_ORCHESTRATOR_HTTP_PORT", "8080"),
 		},
 		GRPC: GRPC{
-			Port:            getEnv("GO_GRPC_PORT", "50053"),
-			DroneServiceURL: getEnv("GRPC_DRONE_SERVICE_URL", "localhost:50051"),
-			QRServiceURL:    getEnv("GRPC_QR_SERVICE_URL", "localhost:50052"),
+			Port: getEnv("GO_ORCHESTRATOR_GRPC_PORT", "50053"),
 		},
 		PG: PG{
-			URL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/hitech?sslmode=disable"),
+			URL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/skypost-delivery?sslmode=disable"),
 		},
 		JWT: JWT{
 			AccessSecret:  getEnv("JWT_ACCESS_SECRET", "your-secret-key-change-in-production"),
 			RefreshSecret: getEnv("JWT_REFRESH_SECRET", "your-refresh-secret-key-change-in-production"),
-			AccessTTL:     7 * 24 * time.Hour,
-			RefreshTTL:    14 * 24 * time.Hour,
+			AccessTTL:     1 * 24 * time.Hour,
+			RefreshTTL:    3 * 24 * time.Hour,
 		},
 		QR: QR{
 			HMACSecret: getEnv("QR_HMAC_SECRET", "your-hmac-secret-key-change-in-production"),

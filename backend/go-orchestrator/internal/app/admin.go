@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/skr1ms/hitech-ekb/config"
-	"github.com/skr1ms/hitech-ekb/internal/usecase/repo"
-	"github.com/skr1ms/hitech-ekb/internal/usecase/webapi"
-	"github.com/skr1ms/hitech-ekb/pkg/qr"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/repo"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/webapi"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"golang.org/x/crypto/bcrypt"
 )
 
