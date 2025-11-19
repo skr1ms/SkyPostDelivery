@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
-	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/repo"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase"
 )
 
@@ -20,20 +20,16 @@ type AdminWebSocketHandler struct {
 	mu                sync.RWMutex
 	upgrader          websocket.Upgrader
 	droneManager      *usecase.DroneManagerUseCase
-	stateRepo         DroneStateRepository
+	droneRepo         repo.DroneRepo
 	broadcastInterval int
 	broadcastStarted  bool
 }
 
-type DroneStateRepository interface {
-	GetDroneState(ctx context.Context, droneID string) (*entity.DroneState, error)
-}
-
-func NewAdminWebSocketHandler(droneManager *usecase.DroneManagerUseCase, stateRepo DroneStateRepository, broadcastInterval int) *AdminWebSocketHandler {
+func NewAdminWebSocketHandler(droneManager *usecase.DroneManagerUseCase, droneRepo repo.DroneRepo, broadcastInterval int) *AdminWebSocketHandler {
 	return &AdminWebSocketHandler{
 		connectedAdmins:   make(map[string]*websocket.Conn),
 		droneManager:      droneManager,
-		stateRepo:         stateRepo,
+		droneRepo:         droneRepo,
 		broadcastInterval: broadcastInterval,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -137,7 +133,7 @@ func (h *AdminWebSocketHandler) getAllDronesStatus(ctx context.Context) []map[st
 
 	drones := h.droneManager.GetAllDrones()
 	for _, droneID := range drones {
-		state, err := h.stateRepo.GetDroneState(ctx, droneID)
+		state, err := h.droneRepo.GetDroneState(ctx, droneID)
 		if err != nil {
 			log.Printf("Failed to get state for drone %s: %v", droneID, err)
 			continue

@@ -11,6 +11,12 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type RabbitMQClient interface {
+	Consume(queueName string, handler func([]byte) error) error
+	Publish(ctx context.Context, queueName string, message interface{}) error
+	Close() error
+}
+
 type Client struct {
 	conn          *amqp.Connection
 	channel       *amqp.Channel

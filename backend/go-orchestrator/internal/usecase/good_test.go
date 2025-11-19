@@ -7,12 +7,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestGoodUseCase_ListGoods_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	expectedGoods := []*entity.Good{
@@ -44,7 +45,7 @@ func TestGoodUseCase_ListGoods_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_ListGoods_Error(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	expectedError := errors.New("database error")
@@ -59,7 +60,7 @@ func TestGoodUseCase_ListGoods_Error(t *testing.T) {
 }
 
 func TestGoodUseCase_GetGood_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -82,7 +83,7 @@ func TestGoodUseCase_GetGood_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_GetGood_NotFound(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -99,7 +100,7 @@ func TestGoodUseCase_GetGood_NotFound(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGood_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -125,7 +126,7 @@ func TestGoodUseCase_CreateGood_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGood_Error(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	expectedError := errors.New("database error")
@@ -140,7 +141,7 @@ func TestGoodUseCase_CreateGood_Error(t *testing.T) {
 }
 
 func TestGoodUseCase_UpdateGood_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -163,7 +164,7 @@ func TestGoodUseCase_UpdateGood_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_UpdateGood_Error(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -180,7 +181,7 @@ func TestGoodUseCase_UpdateGood_Error(t *testing.T) {
 }
 
 func TestGoodUseCase_DeleteGood_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -194,7 +195,7 @@ func TestGoodUseCase_DeleteGood_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_DeleteGood_Error(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	goodID := uuid.New()
@@ -210,7 +211,7 @@ func TestGoodUseCase_DeleteGood_Error(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGoods_Success(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	quantity := 5
@@ -244,7 +245,7 @@ func TestGoodUseCase_CreateGoods_Success(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGoods_SingleItem(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	quantity := 1
@@ -277,7 +278,7 @@ func TestGoodUseCase_CreateGoods_SingleItem(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGoods_Error(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	quantity := 3
@@ -299,7 +300,7 @@ func TestGoodUseCase_CreateGoods_Error(t *testing.T) {
 }
 
 func TestGoodUseCase_CreateGoods_LargeQuantity(t *testing.T) {
-	mockRepo := new(MockGoodRepo)
+	mockRepo := new(mocks.MockGoodRepo)
 	uc := NewGoodUseCase(mockRepo)
 
 	quantity := 100

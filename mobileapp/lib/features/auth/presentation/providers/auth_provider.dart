@@ -58,7 +58,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   void _initNotificationListener() {
-    _tokenSubscription = pushNotificationService.tokenRefreshStream.listen((token) {
+    _tokenSubscription = pushNotificationService.tokenRefreshStream.listen((
+      token,
+    ) {
       if (_user != null) {
         _registerDeviceToken(token);
       }
@@ -292,8 +294,6 @@ class AuthProvider with ChangeNotifier {
         return 'linux';
       case TargetPlatform.fuchsia:
         return 'fuchsia';
-      default:
-        return 'unknown';
     }
   }
 

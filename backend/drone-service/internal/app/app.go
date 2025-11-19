@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,8 +15,10 @@ import (
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/controller/http/middleware"
 	v1 "github.com/skr1ms/SkyPostDelivery/drone-service/internal/controller/http/v1"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/controller/websocket"
+	repo "github.com/skr1ms/SkyPostDelivery/drone-service/internal/repo/persistent"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase"
-	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase/repo"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/grpc"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/logger"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/minio"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/postgres"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/rabbitmq"
@@ -25,53 +26,91 @@ import (
 
 func Run(cfg *config.Config) {
 	ctx := context.Background()
+	logger := logger.New(cfg.LogLevel)
 
 	pg, err := postgres.New(cfg.PG.URL)
 	if err != nil {
-		log.Fatalf("app - Run - postgres.New: %v", err)
+		logger.Error("app - Run - postgres.New", err)
 	}
 	defer pg.Close()
 
 	rabbitmqClient, err := rabbitmq.NewClient(cfg.RabbitMQ.URL)
 	if err != nil {
-		log.Fatalf("app - Run - rabbitmq.NewClient: %v", err)
+		logger.Error("app - Run - rabbitmq.NewClient", err)
 	}
 	defer rabbitmqClient.Close()
 
 	minioClient, err := minio.New(cfg.MinIO)
 	if err != nil {
-		log.Fatalf("app - Run - minio.New: %v", err)
+		logger.Error("app - Run - minio.New", err)
 	}
 
-	stateRepo := repo.NewPostgresStateRepo(pg)
-	droneManager := usecase.NewDroneManagerUseCase(stateRepo)
+	orchestratorGRPCClient, err := grpc.NewOrchestratorGRPCClient(cfg.OrchestratorGRPC.URL)
+	if err != nil {
+		logger.Error("app - Run - grpc.NewOrchestratorGRPCClient", err)
+	}
+
+	droneRepo := repo.NewDroneRepo(pg)
+	deliveryRepo := repo.NewDeliveryRepo(pg)
+	droneManager := usecase.NewDroneManagerUseCase(droneRepo)
 
 	videoHandler := websocket.NewVideoHandler(minioClient)
-	droneWSHandler := websocket.NewDroneWebSocketHandler(stateRepo, stateRepo, droneManager, videoHandler)
-	adminWSHandler := websocket.NewAdminWebSocketHandler(droneManager, stateRepo, cfg.WebSocket.BroadcastInterval)
+
+	tempHandler := websocket.NewDroneWebSocketHandler(nil)
 
 	deliveryUseCase := usecase.NewDeliveryUseCase(
-		stateRepo,
-		stateRepo,
+		droneRepo,
+		deliveryRepo,
 		droneManager,
-		droneWSHandler,
-		nil,
+		tempHandler,
+		orchestratorGRPCClient,
 		rabbitmqClient,
 	)
 
-	droneWSHandler.SetDeliveryUseCase(deliveryUseCase)
+	droneMessageUseCase := usecase.NewDroneMessageUseCase(
+		droneRepo,
+		deliveryRepo,
+		droneManager,
+		deliveryUseCase,
+		tempHandler,
+		videoHandler,
+	)
+
+	droneWSHandler := websocket.NewDroneWebSocketHandler(droneMessageUseCase)
+
+	deliveryUseCase = usecase.NewDeliveryUseCase(
+		droneRepo,
+		deliveryRepo,
+		droneManager,
+		droneWSHandler,
+		orchestratorGRPCClient,
+		rabbitmqClient,
+	)
+
+	droneMessageUseCase = usecase.NewDroneMessageUseCase(
+		droneRepo,
+		deliveryRepo,
+		droneManager,
+		deliveryUseCase,
+		droneWSHandler,
+		videoHandler,
+	)
+
+	droneWSHandler = websocket.NewDroneWebSocketHandler(droneMessageUseCase)
+
+	adminWSHandler := websocket.NewAdminWebSocketHandler(droneManager, droneRepo, cfg.WebSocket.BroadcastInterval)
 
 	deliveryWorker := rabbitmq.NewDeliveryWorker(rabbitmqClient, deliveryUseCase)
 	if err := deliveryWorker.Start(ctx); err != nil {
-		log.Fatalf("app - Run - deliveryWorker.Start: %v", err)
+		logger.Error("app - Run - deliveryWorker.Start", err)
 	}
-	log.Println("Delivery worker started successfully")
+	logger.Info("Delivery worker started successfully", nil)
 
-	gin.SetMode(cfg.GinMode.Mode)
+	gin.SetMode(cfg.GinMode)
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(logger))
 	router.Use(middleware.PrometheusMiddleware())
 	router.Use(middleware.CORS())
 
@@ -87,9 +126,9 @@ func Run(cfg *config.Config) {
 	}
 
 	go func() {
-		log.Printf("HTTP server started on port %s", cfg.HTTP.Port)
+		logger.Info(fmt.Sprintf("HTTP server started on port %s", cfg.HTTP.Port), nil)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("app - Run - httpServer.ListenAndServe: %v", err)
+			logger.Error("app - Run - httpServer.ListenAndServe", err)
 		}
 	}()
 
@@ -97,12 +136,12 @@ func Run(cfg *config.Config) {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	<-interrupt
-	log.Println("app - Run - shutting down")
+	logger.Info("app - Run - shutting down", nil)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("app - Run - httpServer.Shutdown: %v", err)
+		logger.Error("app - Run - httpServer.Shutdown", err)
 	}
 }

@@ -8,15 +8,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestQRUseCase_GenerateQR_Success(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -51,9 +52,9 @@ func TestQRUseCase_GenerateQR_Success(t *testing.T) {
 }
 
 func TestQRUseCase_GenerateQR_GeneratorError(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -74,9 +75,9 @@ func TestQRUseCase_GenerateQR_GeneratorError(t *testing.T) {
 }
 
 func TestQRUseCase_ValidateQR_Success(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -110,9 +111,9 @@ func TestQRUseCase_ValidateQR_Success(t *testing.T) {
 }
 
 func TestQRUseCase_ValidateQR_InvalidQR(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -130,9 +131,9 @@ func TestQRUseCase_ValidateQR_InvalidQR(t *testing.T) {
 }
 
 func TestQRUseCase_ValidateQR_EmailMismatch(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -165,9 +166,9 @@ func TestQRUseCase_ValidateQR_EmailMismatch(t *testing.T) {
 }
 
 func TestQRUseCase_RefreshQR_Success(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -209,9 +210,9 @@ func TestQRUseCase_RefreshQR_Success(t *testing.T) {
 }
 
 func TestQRUseCase_GetUserFromQR_Success(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 
@@ -246,9 +247,9 @@ func TestQRUseCase_GetUserFromQR_Success(t *testing.T) {
 }
 
 func TestQRUseCase_GetUserFromQR_InvalidQR(t *testing.T) {
-	mockQRGenerator := new(MockQRGenerator)
-	mockUserRepo := new(MockUserRepo)
-	mockMinioClient := new(MockMinioClient)
+	mockQRGenerator := new(mocks.MockQRGenerator)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockMinioClient := new(mocks.MockMinioClient)
 
 	uc := NewQRUseCase(mockQRGenerator, mockUserRepo, mockMinioClient)
 

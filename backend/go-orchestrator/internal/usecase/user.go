@@ -8,21 +8,22 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserUseCase struct {
-	userRepo   UserRepo
-	smsWebAPI  SMSWebAPI
-	qrWebAPI   QRWebAPI
+	userRepo   repo.UserRepo
+	smsWebAPI  repo.SMSAeroWebAPI
+	qrWebAPI   repo.QRWebAPI
 	jwtService *jwt.JWTService
 }
 
 func NewUserUseCase(
-	userRepo UserRepo,
-	smsWebAPI SMSWebAPI,
-	qrWebAPI QRWebAPI,
+	userRepo repo.UserRepo,
+	smsWebAPI repo.SMSAeroWebAPI,
+	qrWebAPI repo.QRWebAPI,
 	jwtService *jwt.JWTService,
 ) *UserUseCase {
 	return &UserUseCase{

@@ -7,33 +7,34 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq"
 )
 
 type DeliveryUseCase struct {
-	deliveryRepo   DeliveryRepo
-	orderRepo      OrderRepo
-	lockerRepo     LockerRepo
-	internalLocker InternalLockerRepo
-	rabbitmqClient RabbitMQClient
-	notifier       DeliveryNotifier
+	deliveryRepo       repo.DeliveryRepo
+	orderRepo          repo.OrderRepo
+	lockerRepo         repo.LockerRepo
+	internalLockerRepo repo.InternalLockerRepo
+	rabbitmqClient     rabbitmq.RabbitMQClient
+	notifier           DeliveryNotifier
 }
 
 func NewDeliveryUseCase(
-	deliveryRepo DeliveryRepo,
-	orderRepo OrderRepo,
-	lockerRepo LockerRepo,
-	internalLocker InternalLockerRepo,
-	rabbitmqClient RabbitMQClient,
+	deliveryRepo repo.DeliveryRepo,
+	orderRepo repo.OrderRepo,
+	lockerRepo repo.LockerRepo,
+	internalLockerRepo repo.InternalLockerRepo,
+	rabbitmqClient rabbitmq.RabbitMQClient,
 	notifier DeliveryNotifier,
 ) *DeliveryUseCase {
 	uc := &DeliveryUseCase{
-		deliveryRepo:   deliveryRepo,
-		orderRepo:      orderRepo,
-		lockerRepo:     lockerRepo,
-		internalLocker: internalLocker,
-		rabbitmqClient: rabbitmqClient,
-		notifier:       notifier,
+		deliveryRepo:       deliveryRepo,
+		orderRepo:          orderRepo,
+		lockerRepo:         lockerRepo,
+		internalLockerRepo: internalLockerRepo,
+		rabbitmqClient:     rabbitmqClient,
+		notifier:           notifier,
 	}
 
 	return uc
@@ -123,8 +124,8 @@ func (uc *DeliveryUseCase) ConfirmGoodsLoaded(ctx context.Context, orderID, lock
 		}
 	}
 
-	if delivery.InternalLockerCellID != nil && uc.internalLocker != nil {
-		if err := uc.internalLocker.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "occupied"); err != nil {
+	if delivery.InternalLockerCellID != nil {
+		if err := uc.internalLockerRepo.UpdateCellStatus(ctx, *delivery.InternalLockerCellID, "occupied"); err != nil {
 			fmt.Printf("delivery usecase - ConfirmGoodsLoaded - internalLocker.UpdateCellStatus: %v\n", err)
 		}
 	}

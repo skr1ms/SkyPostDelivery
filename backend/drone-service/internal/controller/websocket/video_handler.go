@@ -120,3 +120,11 @@ func (h *VideoHandler) saveFrameToMinIO(droneID, deliveryID, frameData string) {
 
 	_, _ = h.minioClient.UploadFrame(context.Background(), droneID, deliveryID, frameBytes, frameNumber)
 }
+
+func (h *VideoHandler) HandleVideoFrame(ctx context.Context, droneID string, frameData []byte, deliveryID string) error {
+	frameStr := string(frameData)
+
+	h.BroadcastFrameToAdmins(droneID, frameStr, deliveryID)
+
+	return nil
+}

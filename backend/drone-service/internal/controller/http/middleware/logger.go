@@ -1,38 +1,37 @@
 package middleware
 
 import (
-	"log"
-	"time"
-
 	"github.com/gin-gonic/gin"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/logger"
+	"time"
 )
 
-func Logger() gin.HandlerFunc {
+func Logger(log logger.Interface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+		query := c.Request.URL.RawQuery
 
 		c.Next()
 
 		latency := time.Since(start)
-		clientIP := c.ClientIP()
-		method := c.Request.Method
-		statusCode := c.Writer.Status()
-		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
-		if raw != "" {
-			path = path + "?" + raw
+		fields := map[string]interface{}{
+			"status":     c.Writer.Status(),
+			"method":     c.Request.Method,
+			"path":       path,
+			"query":      query,
+			"ip":         c.ClientIP(),
+			"user_agent": c.Request.UserAgent(),
+			"latency":    latency.Milliseconds(),
 		}
 
-		log.Printf("[GIN] %s | %3d | %13v | %15s | %-7s %s %s",
-			time.Now().Format("2006/01/02 - 15:04:05"),
-			statusCode,
-			latency,
-			clientIP,
-			method,
-			path,
-			errorMessage,
-		)
+		if c.Writer.Status() >= 500 {
+			log.Error("HTTP request", nil, fields)
+		} else if c.Writer.Status() >= 400 {
+			log.Warn("HTTP request", nil, fields)
+		} else {
+			log.Info("HTTP request", nil, fields)
+		}
 	}
 }

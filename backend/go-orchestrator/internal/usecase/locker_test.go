@@ -6,11 +6,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLockerUseCase_GetCell_Success(t *testing.T) {
-	mockLockerRepo := new(MockLockerRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
 	uc := NewLockerUseCase(mockLockerRepo)
 
 	ctx := context.Background()
@@ -36,7 +37,7 @@ func TestLockerUseCase_GetCell_Success(t *testing.T) {
 }
 
 func TestLockerUseCase_ListCells_Success(t *testing.T) {
-	mockLockerRepo := new(MockLockerRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
 	uc := NewLockerUseCase(mockLockerRepo)
 
 	ctx := context.Background()
@@ -58,7 +59,7 @@ func TestLockerUseCase_ListCells_Success(t *testing.T) {
 }
 
 func TestLockerUseCase_UpdateCellStatus_Success(t *testing.T) {
-	mockLockerRepo := new(MockLockerRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
 	uc := NewLockerUseCase(mockLockerRepo)
 
 	ctx := context.Background()

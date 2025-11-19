@@ -7,19 +7,20 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestOrderUseCase_processPendingOrders_Success(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -92,14 +93,14 @@ func TestOrderUseCase_processPendingOrders_Success(t *testing.T) {
 }
 
 func TestOrderUseCase_processPendingOrders_NoAvailableDrone(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -134,14 +135,14 @@ func TestOrderUseCase_processPendingOrders_NoAvailableDrone(t *testing.T) {
 }
 
 func TestOrderUseCase_processPendingOrders_NoDeliveries(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -164,14 +165,14 @@ func TestOrderUseCase_processPendingOrders_NoDeliveries(t *testing.T) {
 }
 
 func TestOrderUseCase_StartPendingOrdersWorker_Cancellation(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,

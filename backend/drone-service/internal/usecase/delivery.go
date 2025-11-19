@@ -7,30 +7,33 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/repo"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/grpc"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/rabbitmq"
 )
 
 type DeliveryUseCase struct {
-	droneStateRepo         DroneStateRepo
-	deliveryTaskRepo       DeliveryTaskRepo
-	droneManager           DroneManager
-	droneWSHandler         DroneWebSocketHandler
-	orchestratorGRPCClient OrchestratorGRPCClient
-	rabbitmqClient         RabbitMQPublisher
+	droneRepo              repo.DroneRepo
+	deliveryRepo           repo.DeliveryRepo
+	droneManager           *DroneManagerUseCase
+	droneNotifier          DroneNotifier
+	orchestratorGRPCClient grpc.OrchestratorGRPCClient
+	rabbitmqClient         rabbitmq.RabbitMQClient
 }
 
 func NewDeliveryUseCase(
-	droneStateRepo DroneStateRepo,
-	deliveryTaskRepo DeliveryTaskRepo,
-	droneManager DroneManager,
-	droneWSHandler DroneWebSocketHandler,
-	orchestratorGRPCClient OrchestratorGRPCClient,
-	rabbitmqClient RabbitMQPublisher,
+	droneRepo repo.DroneRepo,
+	deliveryRepo repo.DeliveryRepo,
+	droneManager *DroneManagerUseCase,
+	droneNotifier DroneNotifier,
+	orchestratorGRPCClient grpc.OrchestratorGRPCClient,
+	rabbitmqClient rabbitmq.RabbitMQClient,
 ) *DeliveryUseCase {
 	return &DeliveryUseCase{
-		droneStateRepo:         droneStateRepo,
-		deliveryTaskRepo:       deliveryTaskRepo,
+		droneRepo:              droneRepo,
+		deliveryRepo:           deliveryRepo,
 		droneManager:           droneManager,
-		droneWSHandler:         droneWSHandler,
+		droneNotifier:          droneNotifier,
 		orchestratorGRPCClient: orchestratorGRPCClient,
 		rabbitmqClient:         rabbitmqClient,
 	}
@@ -63,12 +66,12 @@ func (uc *DeliveryUseCase) StartDelivery(
 		Status:               entity.DeliveryStatusPending,
 	}
 
-	if err := uc.deliveryTaskRepo.SaveDeliveryTask(ctx, task); err != nil {
+	if err := uc.deliveryRepo.SaveDeliveryTask(ctx, task); err != nil {
 		return map[string]interface{}{
 			"success":     false,
 			"message":     "Failed to save delivery task",
 			"delivery_id": "",
-		}, fmt.Errorf("delivery usecase - StartDelivery - deliveryTaskRepo.SaveDeliveryTask: %w", err)
+		}, fmt.Errorf("delivery usecase - StartDelivery - deliveryRepo.SaveDeliveryTask: %w", err)
 	}
 
 	registeredDrones := uc.droneManager.GetRegisteredDrones()
@@ -135,8 +138,15 @@ func (uc *DeliveryUseCase) ExecuteDelivery(
 		"internal_cell_id":  internalLockerCellID,
 	}
 
-	if err := uc.droneWSHandler.SendTaskToDrone(ctx, droneID, taskData); err != nil {
-		return fmt.Errorf("delivery usecase - ExecuteDelivery - droneWSHandler.SendTaskToDrone: %w", err)
+	if uc.droneNotifier != nil {
+		message := map[string]interface{}{
+			"type":      "delivery_task",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"payload":   taskData,
+		}
+		if err := uc.droneNotifier.SendToDrone(ctx, droneID, message); err != nil {
+			return fmt.Errorf("delivery usecase - ExecuteDelivery - droneNotifier.SendToDrone: %w", err)
+		}
 	}
 
 	return nil
@@ -145,8 +155,8 @@ func (uc *DeliveryUseCase) ExecuteDelivery(
 func (uc *DeliveryUseCase) executeDelivery(task *entity.DeliveryTask) {
 	ctx := context.Background()
 
-	if err := uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusInProgress, nil); err != nil {
-		_ = uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
+	if err := uc.deliveryRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusInProgress, nil); err != nil {
+		_ = uc.deliveryRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
 		if task.DroneID != nil {
 			_ = uc.droneManager.ReleaseDrone(ctx, *task.DroneID)
 		}
@@ -170,13 +180,20 @@ func (uc *DeliveryUseCase) executeDelivery(task *entity.DeliveryTask) {
 	}
 
 	if task.DroneID == nil {
-		_ = uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
+		_ = uc.deliveryRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
 		return
 	}
 
-	if err := uc.droneWSHandler.SendTaskToDrone(ctx, *task.DroneID, taskData); err != nil {
-		_ = uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
-		_ = uc.droneManager.ReleaseDrone(ctx, *task.DroneID)
+	if uc.droneNotifier != nil {
+		message := map[string]interface{}{
+			"type":      "delivery_task",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"payload":   taskData,
+		}
+		if err := uc.droneNotifier.SendToDrone(ctx, *task.DroneID, message); err != nil {
+			_ = uc.deliveryRepo.UpdateDeliveryStatus(ctx, task.OrderID, entity.DeliveryStatusFailed, nil)
+			_ = uc.droneManager.ReleaseDrone(ctx, *task.DroneID)
+		}
 	}
 }
 
@@ -189,8 +206,15 @@ func (uc *DeliveryUseCase) HandleReturnTask(ctx context.Context, droneID string,
 		},
 	}
 
-	if err := uc.droneWSHandler.SendCommandToDrone(ctx, droneID, returnCommand); err != nil {
-		return fmt.Errorf("delivery usecase - HandleReturnTask - droneWSHandler.SendCommandToDrone: %w", err)
+	if uc.droneNotifier != nil {
+		message := map[string]interface{}{
+			"type":      "command",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"payload":   returnCommand,
+		}
+		if err := uc.droneNotifier.SendToDrone(ctx, droneID, message); err != nil {
+			return fmt.Errorf("delivery usecase - HandleReturnTask - droneNotifier.SendToDrone: %w", err)
+		}
 	}
 
 	if err := uc.droneManager.ReleaseDrone(ctx, droneID); err != nil {
@@ -209,8 +233,15 @@ func (uc *DeliveryUseCase) SendReturnCommand(ctx context.Context, droneID string
 		},
 	}
 
-	if err := uc.droneWSHandler.SendCommandToDrone(ctx, droneID, returnCommand); err != nil {
-		return fmt.Errorf("delivery usecase - SendReturnCommand - droneWSHandler.SendCommandToDrone: %w", err)
+	if uc.droneNotifier != nil {
+		message := map[string]interface{}{
+			"type":      "command",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"payload":   returnCommand,
+		}
+		if err := uc.droneNotifier.SendToDrone(ctx, droneID, message); err != nil {
+			return fmt.Errorf("delivery usecase - SendReturnCommand - droneNotifier.SendToDrone: %w", err)
+		}
 	}
 
 	return nil
@@ -240,11 +271,18 @@ func (uc *DeliveryUseCase) HandleDroneArrived(ctx context.Context, droneID strin
 			"internal_cell_id": response.InternalCellID,
 		}
 
-		if err := uc.droneWSHandler.SendCommandToDrone(ctx, droneID, command); err != nil {
-			return map[string]interface{}{
-				"success": false,
-				"message": "Failed to send drop_cargo command",
-			}, fmt.Errorf("delivery usecase - HandleDroneArrived - droneWSHandler.SendCommandToDrone: %w", err)
+		if uc.droneNotifier != nil {
+			message := map[string]interface{}{
+				"type":      "command",
+				"timestamp": time.Now().Format(time.RFC3339),
+				"payload":   command,
+			}
+			if err := uc.droneNotifier.SendToDrone(ctx, droneID, message); err != nil {
+				return map[string]interface{}{
+					"success": false,
+					"message": "Failed to send drop_cargo command",
+				}, fmt.Errorf("delivery usecase - HandleDroneArrived - droneNotifier.SendToDrone: %w", err)
+			}
 		}
 
 		return map[string]interface{}{
@@ -261,7 +299,7 @@ func (uc *DeliveryUseCase) HandleDroneArrived(ctx context.Context, droneID strin
 }
 
 func (uc *DeliveryUseCase) HandleCargoDropped(ctx context.Context, orderID string, lockerCellID string) (map[string]interface{}, error) {
-	task, err := uc.deliveryTaskRepo.GetDeliveryTask(ctx, orderID)
+	task, err := uc.deliveryRepo.GetDeliveryTask(ctx, orderID)
 	if err != nil {
 		return map[string]interface{}{
 			"success": false,
@@ -276,7 +314,7 @@ func (uc *DeliveryUseCase) HandleCargoDropped(ctx context.Context, orderID strin
 		}, fmt.Errorf("delivery usecase - HandleCargoDropped - delivery task not found")
 	}
 
-	if err := uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, orderID, entity.DeliveryStatusCompleted, nil); err != nil {
+	if err := uc.deliveryRepo.UpdateDeliveryStatus(ctx, orderID, entity.DeliveryStatusCompleted, nil); err != nil {
 		return map[string]interface{}{
 			"success": false,
 			"message": "Failed to update delivery status",
@@ -305,7 +343,7 @@ func (uc *DeliveryUseCase) HandleCargoDropped(ctx context.Context, orderID strin
 }
 
 func (uc *DeliveryUseCase) CancelDelivery(ctx context.Context, deliveryID string) (map[string]interface{}, error) {
-	task, err := uc.deliveryTaskRepo.GetDeliveryTask(ctx, deliveryID)
+	task, err := uc.deliveryRepo.GetDeliveryTask(ctx, deliveryID)
 	if err != nil {
 		return map[string]interface{}{
 			"success": false,
@@ -320,14 +358,18 @@ func (uc *DeliveryUseCase) CancelDelivery(ctx context.Context, deliveryID string
 		}, fmt.Errorf("delivery usecase - CancelDelivery - delivery not found")
 	}
 
-	if uc.droneWSHandler != nil && task.DroneID != nil {
-		command := map[string]interface{}{
-			"command": "cancel_delivery",
+	if uc.droneNotifier != nil && task.DroneID != nil {
+		message := map[string]interface{}{
+			"type":      "command",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"payload": map[string]interface{}{
+				"command": "cancel_delivery",
+			},
 		}
-		_ = uc.droneWSHandler.SendCommandToDrone(ctx, *task.DroneID, command)
+		_ = uc.droneNotifier.SendToDrone(ctx, *task.DroneID, message)
 	}
 
-	if err := uc.deliveryTaskRepo.UpdateDeliveryStatus(ctx, deliveryID, entity.DeliveryStatusCancelled, nil); err != nil {
+	if err := uc.deliveryRepo.UpdateDeliveryStatus(ctx, deliveryID, entity.DeliveryStatusCancelled, nil); err != nil {
 		return map[string]interface{}{
 			"success": false,
 			"message": "Failed to cancel delivery",
@@ -345,7 +387,7 @@ func (uc *DeliveryUseCase) CancelDelivery(ctx context.Context, deliveryID string
 }
 
 func (uc *DeliveryUseCase) GetDeliveryStatus(ctx context.Context, deliveryID string) (map[string]interface{}, error) {
-	task, err := uc.deliveryTaskRepo.GetDeliveryTask(ctx, deliveryID)
+	task, err := uc.deliveryRepo.GetDeliveryTask(ctx, deliveryID)
 	if err != nil {
 		return map[string]interface{}{
 			"success": false,

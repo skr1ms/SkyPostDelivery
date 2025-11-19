@@ -148,7 +148,7 @@ services:
       DRONE_SERVICE_GRPC_PORT: ${DRONE_SERVICE_GRPC_PORT}
       DRONE_SERVICE_HTTP_PORT: ${DRONE_SERVICE_HTTP_PORT}
       DRONE_SERVICE_HTTP_URL: ${DRONE_SERVICE_HTTP_URL}
-      ORCHESTRATOR_GRPC_URL: go-orchestrator:${GO_ORCHESTRATOR_GRPC_PORT}
+      GRPC_GO_ORCHESTRATOR_URL: go-orchestrator:${GO_ORCHESTRATOR_GRPC_PORT}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672/${RABBITMQ_VHOST:-/}
       WEBSOCKET_BROADCAST_INTERVAL: ${WEBSOCKET_BROADCAST_INTERVAL:-5}
       DATABASE_URL: ${DATABASE_URL}
@@ -217,6 +217,7 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: skypost-delivery-loki
+    user: "0:0"
     command: -config.file=/etc/loki/loki-config.yml
     ports:
       - "${LOKI_PORT:-3100}:3100"

@@ -7,18 +7,19 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderUseCase_CreateOrder_GoodNotFound(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -46,13 +47,13 @@ func TestOrderUseCase_CreateOrder_GoodNotFound(t *testing.T) {
 }
 
 func TestOrderUseCase_GetOrder_Success(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -84,14 +85,14 @@ func TestOrderUseCase_GetOrder_Success(t *testing.T) {
 }
 
 func TestOrderUseCase_GetUserOrders_Success(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -123,14 +124,14 @@ func TestOrderUseCase_GetUserOrders_Success(t *testing.T) {
 }
 
 func TestOrderUseCase_GetUserOrdersWithGoods_Success(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -203,14 +204,14 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Success(t *testing.T) {
 }
 
 func TestOrderUseCase_GetUserOrdersWithGoods_Error(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,
@@ -237,14 +238,14 @@ func TestOrderUseCase_GetUserOrdersWithGoods_Error(t *testing.T) {
 }
 
 func TestOrderUseCase_CreateMultipleOrders_Success(t *testing.T) {
-	mockOrderRepo := new(MockOrderRepo)
-	mockGoodRepo := new(MockGoodRepo)
-	mockDroneRepo := new(MockDroneRepo)
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockParcelAutomatRepo := new(MockParcelAutomatRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockGoodRepo := new(mocks.MockGoodRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockParcelAutomatRepo := new(mocks.MockParcelAutomatRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 
 	uc := NewOrderUseCase(
 		mockOrderRepo,

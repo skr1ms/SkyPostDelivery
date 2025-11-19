@@ -14,6 +14,12 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+type QRGeneratorContract interface {
+	GenerateQRCode(userID uuid.UUID, email, name string) (qrData *QRData, qrImageBase64 string, err error)
+	ValidateQRCode(qrDataJSON string) (qrData *QRData, err error)
+	RefreshQRCode(userID uuid.UUID, email, name string) (qrData *QRData, qrImageBase64 string, err error)
+}
+
 const TTL = 7 * 24 * time.Hour
 
 type QRGenerator struct {

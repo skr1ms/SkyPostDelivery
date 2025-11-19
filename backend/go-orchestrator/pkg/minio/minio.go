@@ -10,6 +10,13 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+type MinioClient interface {
+	UploadFile(ctx context.Context, objectName string, reader io.Reader, objectSize int64, contentType string) error
+	GetFileURL(objectName string) string
+	DeleteFile(ctx context.Context, objectName string) error
+	EnsureBucket(ctx context.Context, bucketNames ...string) error
+}
+
 type Client struct {
 	client    *minio.Client
 	bucket    string

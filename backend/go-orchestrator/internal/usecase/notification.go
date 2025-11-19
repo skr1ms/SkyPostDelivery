@@ -5,19 +5,19 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/push"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 )
 
 type NotificationUseCase struct {
-	deviceRepo DeviceRepo
-	sender     push.Sender
+	deviceRepo repo.DeviceRepo
+	sender     repo.Sender
 }
 
 type DeliveryNotifier interface {
 	NotifyOrderDelivered(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, lockerCellID *uuid.UUID) error
 }
 
-func NewNotificationUseCase(deviceRepo DeviceRepo, sender push.Sender) *NotificationUseCase {
+func NewNotificationUseCase(deviceRepo repo.DeviceRepo, sender repo.Sender) *NotificationUseCase {
 	return &NotificationUseCase{
 		deviceRepo: deviceRepo,
 		sender:     sender,
@@ -53,15 +53,12 @@ func (uc *NotificationUseCase) NotifyOrderDelivered(ctx context.Context, userID 
 		return nil
 	}
 
-	payload := push.DeliveryPayload{
-		OrderID: orderID.String(),
-	}
+	var lockerCellIDString string
 	if lockerCellID != nil {
-		id := lockerCellID.String()
-		payload.LockerCellID = &id
+		lockerCellIDString = lockerCellID.String()
 	}
 
-	invalidTokens, err := uc.sender.SendDeliveryNotification(ctx, tokens, payload)
+	invalidTokens, err := uc.sender.SendDeliveryNotification(ctx, tokens, orderID.String(), &lockerCellIDString)
 	if err != nil {
 		return fmt.Errorf("NotificationUseCase - NotifyOrderDelivered - SendDeliveryNotification: %w", err)
 	}

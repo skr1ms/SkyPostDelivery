@@ -11,6 +11,28 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type RabbitMQClient interface {
+	Publish(ctx context.Context, queue string, message interface{}) error
+}
+
+type DeliveryHandler interface {
+	ExecuteDelivery(
+		ctx context.Context,
+		droneID string,
+		orderID string,
+		goodID string,
+		parcelAutomatID string,
+		arucoID int,
+		coordinates string,
+		weight float64,
+		height float64,
+		length float64,
+		width float64,
+		internalLockerCellID *string,
+	) error
+	HandleReturnTask(ctx context.Context, droneID string, deliveryID string, baseMarkerID int) error
+}
+
 type Client struct {
 	conn          *amqp.Connection
 	channel       *amqp.Channel

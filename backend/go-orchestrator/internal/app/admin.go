@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/repo"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/webapi"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo/persistent"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo/webapi"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"golang.org/x/crypto/bcrypt"
 )

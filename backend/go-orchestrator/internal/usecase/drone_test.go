@@ -7,11 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDroneUseCase_GetStatus_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -35,7 +36,7 @@ func TestDroneUseCase_GetStatus_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_GetStatus_Error(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -53,7 +54,7 @@ func TestDroneUseCase_GetStatus_Error(t *testing.T) {
 }
 
 func TestDroneUseCase_ListDrones_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -75,7 +76,7 @@ func TestDroneUseCase_ListDrones_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_UpdateDroneStatus_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -92,7 +93,7 @@ func TestDroneUseCase_UpdateDroneStatus_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_UpdateDroneStatus_Error(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -110,7 +111,7 @@ func TestDroneUseCase_UpdateDroneStatus_Error(t *testing.T) {
 }
 
 func TestDroneUseCase_CreateDrone_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -137,7 +138,7 @@ func TestDroneUseCase_CreateDrone_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_CreateDrone_Error(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -156,7 +157,7 @@ func TestDroneUseCase_CreateDrone_Error(t *testing.T) {
 }
 
 func TestDroneUseCase_UpdateDrone_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -182,7 +183,7 @@ func TestDroneUseCase_UpdateDrone_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_UpdateDrone_UpdateError(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -201,7 +202,7 @@ func TestDroneUseCase_UpdateDrone_UpdateError(t *testing.T) {
 }
 
 func TestDroneUseCase_DeleteDrone_Success(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 
@@ -217,7 +218,7 @@ func TestDroneUseCase_DeleteDrone_Success(t *testing.T) {
 }
 
 func TestDroneUseCase_DeleteDrone_Error(t *testing.T) {
-	mockDroneRepo := new(MockDroneRepo)
+	mockDroneRepo := new(mocks.MockDroneRepo)
 
 	uc := NewDroneUseCase(mockDroneRepo)
 

@@ -6,14 +6,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 )
 
 type DroneUseCase struct {
-	droneRepo DroneRepo
+	droneRepo repo.DroneRepo
 }
 
 func NewDroneUseCase(
-	droneRepo DroneRepo,
+	droneRepo repo.DroneRepo,
 ) *DroneUseCase {
 	return &DroneUseCase{
 		droneRepo: droneRepo,

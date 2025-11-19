@@ -6,17 +6,18 @@ import (
 	"sync"
 
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/repo"
 )
 
 type DroneManagerUseCase struct {
-	droneStateRepo   DroneStateRepo
+	droneRepo        repo.DroneRepo
 	registeredDrones map[string]bool
 	mu               sync.RWMutex
 }
 
-func NewDroneManagerUseCase(droneStateRepo DroneStateRepo) *DroneManagerUseCase {
+func NewDroneManagerUseCase(droneRepo repo.DroneRepo) *DroneManagerUseCase {
 	return &DroneManagerUseCase{
-		droneStateRepo:   droneStateRepo,
+		droneRepo:        droneRepo,
 		registeredDrones: make(map[string]bool),
 	}
 }
@@ -34,7 +35,7 @@ func (dm *DroneManagerUseCase) GetFreeDrone(ctx context.Context) (string, error)
 	defer dm.mu.RUnlock()
 
 	for droneID := range dm.registeredDrones {
-		state, err := dm.droneStateRepo.GetDroneState(ctx, droneID)
+		state, err := dm.droneRepo.GetDroneState(ctx, droneID)
 		if err != nil {
 			continue
 		}
@@ -50,7 +51,7 @@ func (dm *DroneManagerUseCase) GetFreeDrone(ctx context.Context) (string, error)
 }
 
 func (dm *DroneManagerUseCase) AssignDeliveryToDrone(ctx context.Context, droneID string, deliveryID string) error {
-	state, err := dm.droneStateRepo.GetDroneState(ctx, droneID)
+	state, err := dm.droneRepo.GetDroneState(ctx, droneID)
 	if err != nil {
 		return fmt.Errorf("drone manager usecase - AssignDeliveryToDrone - droneStateRepo.GetDroneState: %w", err)
 	}
@@ -58,7 +59,7 @@ func (dm *DroneManagerUseCase) AssignDeliveryToDrone(ctx context.Context, droneI
 	if state != nil {
 		state.CurrentDeliveryID = &deliveryID
 		state.Status = entity.DroneStatusTakingOff
-		if err := dm.droneStateRepo.SaveDroneState(ctx, state); err != nil {
+		if err := dm.droneRepo.SaveDroneState(ctx, state); err != nil {
 			return fmt.Errorf("drone manager usecase - AssignDeliveryToDrone - droneStateRepo.SaveDroneState: %w", err)
 		}
 	}
@@ -67,7 +68,7 @@ func (dm *DroneManagerUseCase) AssignDeliveryToDrone(ctx context.Context, droneI
 }
 
 func (dm *DroneManagerUseCase) ReleaseDrone(ctx context.Context, droneID string) error {
-	state, err := dm.droneStateRepo.GetDroneState(ctx, droneID)
+	state, err := dm.droneRepo.GetDroneState(ctx, droneID)
 	if err != nil {
 		return fmt.Errorf("drone manager usecase - ReleaseDrone - droneStateRepo.GetDroneState: %w", err)
 	}
@@ -75,7 +76,7 @@ func (dm *DroneManagerUseCase) ReleaseDrone(ctx context.Context, droneID string)
 	if state != nil {
 		state.CurrentDeliveryID = nil
 		state.Status = entity.DroneStatusIdle
-		if err := dm.droneStateRepo.SaveDroneState(ctx, state); err != nil {
+		if err := dm.droneRepo.SaveDroneState(ctx, state); err != nil {
 			return fmt.Errorf("drone manager usecase - ReleaseDrone - droneStateRepo.SaveDroneState: %w", err)
 		}
 	}
@@ -92,9 +93,9 @@ func (dm *DroneManagerUseCase) UnregisterDrone(ctx context.Context, droneID stri
 }
 
 func (dm *DroneManagerUseCase) GetDroneState(ctx context.Context, droneID string) (*entity.DroneState, error) {
-	state, err := dm.droneStateRepo.GetDroneState(ctx, droneID)
+	state, err := dm.droneRepo.GetDroneState(ctx, droneID)
 	if err != nil {
-		return nil, fmt.Errorf("drone manager usecase - GetDroneState - droneStateRepo.GetDroneState: %w", err)
+		return nil, fmt.Errorf("drone manager usecase - GetDroneState - droneRepo.GetDroneState: %w", err)
 	}
 	return state, nil
 }

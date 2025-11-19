@@ -35,7 +35,7 @@
    - RabbitMQ credentials (`RABBITMQ_USER`, `RABBITMQ_PASSWORD`)
    - `SMSAERO_EMAIL`, `SMSAERO_API_KEY`
    - `ADMIN_PANEL_URL`, `VITE_API_URL`, `VITE_MINIO_URL`, `VITE_GRAFANA_URL`
-   - `DRONE_SERVICE_HTTP_URL`, `GRPC_DRONE_SERVICE_URL`, `ORCHESTRATOR_GRPC_URL`
+   - `DRONE_SERVICE_HTTP_URL`, `GRPC_DRONE_SERVICE_URL`, `GRPC_GO_ORCHESTRATOR_URL`
    - `FIREBASE_CREDENTIALS_FILE` — absolute path inside the container; Compose mounts the host file at `/app/secrets/firebase-service-account.json`. Update the host path in the Compose file if you store the JSON elsewhere.
 3. Optional monitoring:
    - `PROMETHEUS_PORT`, `LOKI_PORT`, `GRAFANA_PORT`, and Grafana admin credentials.

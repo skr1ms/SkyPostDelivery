@@ -9,12 +9,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type OrchestratorClient struct {
-	conn   *grpc.ClientConn
-	client interface{}
+type OrchestratorGRPCClient interface {
+	RequestCellOpen(ctx context.Context, orderID string, parcelAutomatID string) (*CellOpenResponse, error)
 }
 
-func NewOrchestratorClient(address string) (*OrchestratorClient, error) {
+type OrchestratorClient struct {
+	conn   *grpc.ClientConn
+	client OrchestratorGRPCClient
+}
+
+func NewOrchestratorGRPCClient(address string) (*OrchestratorClient, error) {
 	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
@@ -22,6 +26,9 @@ func NewOrchestratorClient(address string) (*OrchestratorClient, error) {
 
 	return &OrchestratorClient{
 		conn: conn,
+		client: &OrchestratorClient{
+			conn: conn,
+		},
 	}, nil
 }
 

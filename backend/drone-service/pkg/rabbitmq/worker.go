@@ -7,7 +7,6 @@ import (
 	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase"
 )
 
 const (
@@ -18,13 +17,13 @@ const (
 
 type DeliveryWorker struct {
 	client          *Client
-	deliveryUseCase *usecase.DeliveryUseCase
+	deliveryHandler DeliveryHandler
 }
 
-func NewDeliveryWorker(client *Client, deliveryUseCase *usecase.DeliveryUseCase) *DeliveryWorker {
+func NewDeliveryWorker(client *Client, deliveryHandler DeliveryHandler) *DeliveryWorker {
 	return &DeliveryWorker{
 		client:          client,
-		deliveryUseCase: deliveryUseCase,
+		deliveryHandler: deliveryHandler,
 	}
 }
 
@@ -77,7 +76,7 @@ func (w *DeliveryWorker) handleDeliveryTask(ctx context.Context, delivery amqp.D
 	log.Printf("Processing delivery task: drone_id=%s, order_id=%s, aruco_id=%d, coordinates=%s",
 		droneID, orderID, int(arucoID), coordinates)
 
-	if err := w.deliveryUseCase.ExecuteDelivery(
+	if err := w.deliveryHandler.ExecuteDelivery(
 		ctx,
 		droneID,
 		orderID,
@@ -121,7 +120,7 @@ func (w *DeliveryWorker) handleReturnTask(ctx context.Context, delivery amqp.Del
 		}
 	}
 
-	if err := w.deliveryUseCase.HandleReturnTask(ctx, droneID, deliveryID, arucoID); err != nil {
+	if err := w.deliveryHandler.HandleReturnTask(ctx, droneID, deliveryID, arucoID); err != nil {
 		log.Printf("Failed to handle return task: %v", err)
 		return err
 	}

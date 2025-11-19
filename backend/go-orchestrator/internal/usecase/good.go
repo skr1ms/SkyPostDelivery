@@ -6,13 +6,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 )
 
 type GoodUseCase struct {
-	goodRepo GoodRepo
+	goodRepo repo.GoodRepo
 }
 
-func NewGoodUseCase(goodRepo GoodRepo) *GoodUseCase {
+func NewGoodUseCase(goodRepo repo.GoodRepo) *GoodUseCase {
 	return &GoodUseCase{
 		goodRepo: goodRepo,
 	}

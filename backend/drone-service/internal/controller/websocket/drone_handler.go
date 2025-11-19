@@ -11,45 +11,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/entity"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase"
 )
 
 type DroneWebSocketHandler struct {
-	stateRepo        usecase.DroneStateRepo
-	deliveryTaskRepo usecase.DeliveryTaskRepo
-	droneManager     usecase.DroneManager
-	deliveryUseCase  *usecase.DeliveryUseCase
-	videoHandler     *VideoHandler
-	connectedDrones  map[string]*websocket.Conn
-	ipToID           map[string]string
-	mu               sync.RWMutex
-	upgrader         websocket.Upgrader
+	droneMessageUseCase *usecase.DroneMessageUseCase
+	connectedDrones     map[string]*websocket.Conn
+	ipToID              map[string]string
+	mu                  sync.RWMutex
+	upgrader            websocket.Upgrader
 }
 
 func NewDroneWebSocketHandler(
-	stateRepo usecase.DroneStateRepo,
-	deliveryTaskRepo usecase.DeliveryTaskRepo,
-	droneManager usecase.DroneManager,
-	videoHandler *VideoHandler,
+	droneMessageUseCase *usecase.DroneMessageUseCase,
 ) *DroneWebSocketHandler {
 	return &DroneWebSocketHandler{
-		stateRepo:        stateRepo,
-		deliveryTaskRepo: deliveryTaskRepo,
-		droneManager:     droneManager,
-		videoHandler:     videoHandler,
-		connectedDrones:  make(map[string]*websocket.Conn),
-		ipToID:           make(map[string]string),
+		droneMessageUseCase: droneMessageUseCase,
+		connectedDrones:     make(map[string]*websocket.Conn),
+		ipToID:              make(map[string]string),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
 		},
 	}
-}
-
-func (h *DroneWebSocketHandler) SetDeliveryUseCase(deliveryUseCase *usecase.DeliveryUseCase) {
-	h.deliveryUseCase = deliveryUseCase
 }
 
 // @Summary      WebSocket подключение дрона
@@ -101,11 +86,11 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 		return
 	}
 
-	droneID, err := h.stateRepo.GetDroneIDByIP(ctx, ipAddress)
-	if err != nil || droneID == "" {
+	droneID, err := h.droneMessageUseCase.RegisterDrone(ctx, ipAddress)
+	if err != nil {
 		conn.WriteJSON(map[string]string{
 			"type":    "error",
-			"message": fmt.Sprintf("No drone found with IP %s", ipAddress),
+			"message": err.Error(),
 		})
 		return
 	}
@@ -114,10 +99,6 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 	h.connectedDrones[droneID] = conn
 	h.ipToID[ipAddress] = droneID
 	h.mu.Unlock()
-
-	if err := h.droneManager.RegisterDrone(ctx, droneID); err != nil {
-		log.Printf("Failed to register drone %s: %v", droneID, err)
-	}
 
 	conn.WriteJSON(map[string]interface{}{
 		"type":      "registered",
@@ -135,7 +116,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 			}
 		}
 		h.mu.Unlock()
-		h.droneManager.UnregisterDrone(ctx, droneID)
+		h.droneMessageUseCase.UnregisterDrone(ctx, droneID)
 	}()
 
 	for {
@@ -186,52 +167,7 @@ func (h *DroneWebSocketHandler) handleHeartbeat(ctx context.Context, droneID str
 		payload = data
 	}
 
-	status, _ := payload["status"].(string)
-	if status == "" {
-		status = "idle"
-	}
-
-	batteryLevel, _ := payload["battery_level"].(float64)
-	if batteryLevel == 0 {
-		batteryLevel = 100.0
-	}
-
-	currentDeliveryID, _ := payload["current_delivery_id"].(string)
-	errorMessage, _ := payload["error_message"].(string)
-
-	position := entity.Position{}
-	if pos, ok := payload["position"].(map[string]interface{}); ok {
-		position.Latitude, _ = pos["latitude"].(float64)
-		position.Longitude, _ = pos["longitude"].(float64)
-		position.Altitude, _ = pos["altitude"].(float64)
-	}
-
-	speed, _ := payload["speed"].(float64)
-
-	if batteryLevel > 0 {
-		if err := h.stateRepo.UpdateDroneBattery(ctx, droneID, batteryLevel); err != nil {
-			return err
-		}
-	}
-
-	state := &entity.DroneState{
-		DroneID:         droneID,
-		Status:          entity.DroneStatus(status),
-		BatteryLevel:    batteryLevel,
-		CurrentPosition: position,
-		Speed:           speed,
-		LastUpdated:     time.Now(),
-	}
-
-	if currentDeliveryID != "" {
-		state.CurrentDeliveryID = &currentDeliveryID
-	}
-
-	if errorMessage != "" {
-		state.ErrorMessage = &errorMessage
-	}
-
-	return h.stateRepo.SaveDroneState(ctx, state)
+	return h.droneMessageUseCase.ProcessHeartbeat(ctx, droneID, payload)
 }
 
 func (h *DroneWebSocketHandler) handleStatusUpdate(ctx context.Context, droneID string, data map[string]interface{}) error {
@@ -240,38 +176,7 @@ func (h *DroneWebSocketHandler) handleStatusUpdate(ctx context.Context, droneID 
 		return nil
 	}
 
-	status, _ := payload["status"].(string)
-	batteryLevel, _ := payload["battery_level"].(float64)
-	currentDeliveryID, _ := payload["current_delivery_id"].(string)
-	errorMessage, _ := payload["error_message"].(string)
-
-	position := entity.Position{}
-	if pos, ok := payload["position"].(map[string]interface{}); ok {
-		position.Latitude, _ = pos["latitude"].(float64)
-		position.Longitude, _ = pos["longitude"].(float64)
-		position.Altitude, _ = pos["altitude"].(float64)
-	}
-
-	speed, _ := payload["speed"].(float64)
-
-	state := &entity.DroneState{
-		DroneID:         droneID,
-		Status:          entity.DroneStatus(status),
-		BatteryLevel:    batteryLevel,
-		CurrentPosition: position,
-		Speed:           speed,
-		LastUpdated:     time.Now(),
-	}
-
-	if currentDeliveryID != "" {
-		state.CurrentDeliveryID = &currentDeliveryID
-	}
-
-	if errorMessage != "" {
-		state.ErrorMessage = &errorMessage
-	}
-
-	return h.stateRepo.SaveDroneState(ctx, state)
+	return h.droneMessageUseCase.ProcessStatusUpdate(ctx, droneID, payload)
 }
 
 func (h *DroneWebSocketHandler) handleDeliveryUpdate(ctx context.Context, droneID string, data map[string]interface{}) error {
@@ -280,31 +185,7 @@ func (h *DroneWebSocketHandler) handleDeliveryUpdate(ctx context.Context, droneI
 		return nil
 	}
 
-	droneStatus, _ := payload["drone_status"].(string)
-	orderID, _ := payload["order_id"].(string)
-	parcelAutomatID, _ := payload["parcel_automat_id"].(string)
-
-	if droneStatus == "arrived_at_destination" {
-		if orderID != "" && parcelAutomatID != "" && h.deliveryUseCase != nil {
-			_, err := h.deliveryUseCase.HandleDroneArrived(ctx, droneID, orderID, parcelAutomatID)
-			return err
-		}
-		return nil
-	}
-
-	deliveryID, ok := payload["delivery_id"].(string)
-	if !ok || deliveryID == "" {
-		return nil
-	}
-
-	switch droneStatus {
-	case "arrived_at_locker":
-		return h.deliveryTaskRepo.UpdateDeliveryStatus(ctx, deliveryID, entity.DeliveryStatusInProgress, nil)
-	case "returning":
-		return h.droneManager.ReleaseDrone(ctx, droneID)
-	}
-
-	return nil
+	return h.droneMessageUseCase.ProcessDeliveryUpdate(ctx, droneID, payload)
 }
 
 func (h *DroneWebSocketHandler) handleArrivedAtDestination(ctx context.Context, droneID string, data map[string]interface{}) error {
@@ -313,19 +194,7 @@ func (h *DroneWebSocketHandler) handleArrivedAtDestination(ctx context.Context, 
 		return nil
 	}
 
-	orderID, _ := payload["order_id"].(string)
-	parcelAutomatID, _ := payload["parcel_automat_id"].(string)
-
-	if orderID == "" || parcelAutomatID == "" {
-		return nil
-	}
-
-	if h.deliveryUseCase != nil {
-		_, err := h.deliveryUseCase.HandleDroneArrived(ctx, droneID, orderID, parcelAutomatID)
-		return err
-	}
-
-	return nil
+	return h.droneMessageUseCase.ProcessArrivedAtDestination(ctx, droneID, payload)
 }
 
 func (h *DroneWebSocketHandler) handleCargoDropped(ctx context.Context, data map[string]interface{}) error {
@@ -334,26 +203,10 @@ func (h *DroneWebSocketHandler) handleCargoDropped(ctx context.Context, data map
 		return nil
 	}
 
-	orderID, _ := payload["order_id"].(string)
-	lockerCellID, _ := payload["locker_cell_id"].(string)
-
-	if orderID == "" {
-		return nil
-	}
-
-	if h.deliveryUseCase != nil {
-		_, err := h.deliveryUseCase.HandleCargoDropped(ctx, orderID, lockerCellID)
-		return err
-	}
-
-	return nil
+	return h.droneMessageUseCase.ProcessCargoDropped(ctx, payload)
 }
 
-func (h *DroneWebSocketHandler) handleVideoFrame(_ context.Context, droneID string, data map[string]interface{}) error {
-	if h.videoHandler == nil {
-		return nil
-	}
-
+func (h *DroneWebSocketHandler) handleVideoFrame(ctx context.Context, droneID string, data map[string]interface{}) error {
 	payload, ok := data["payload"].(map[string]interface{})
 	if !ok {
 		payload = data
@@ -363,43 +216,19 @@ func (h *DroneWebSocketHandler) handleVideoFrame(_ context.Context, droneID stri
 	deliveryID, _ := payload["delivery_id"].(string)
 
 	if frameData != "" {
-		h.videoHandler.BroadcastFrameToAdmins(droneID, frameData, deliveryID)
+		return h.droneMessageUseCase.ProcessVideoFrame(ctx, droneID, []byte(frameData), deliveryID)
 	}
 
 	return nil
 }
 
-func (h *DroneWebSocketHandler) SendTaskToDrone(ctx context.Context, droneID string, task map[string]interface{}) error {
+func (h *DroneWebSocketHandler) SendToDrone(ctx context.Context, droneID string, message map[string]interface{}) error {
 	h.mu.RLock()
 	conn, exists := h.connectedDrones[droneID]
 	h.mu.RUnlock()
 
 	if !exists {
-		return nil
-	}
-
-	message := map[string]interface{}{
-		"type":      "delivery_task",
-		"timestamp": time.Now().Format(time.RFC3339),
-		"payload":   task,
-	}
-
-	return conn.WriteJSON(message)
-}
-
-func (h *DroneWebSocketHandler) SendCommandToDrone(ctx context.Context, droneID string, command map[string]interface{}) error {
-	h.mu.RLock()
-	conn, exists := h.connectedDrones[droneID]
-	h.mu.RUnlock()
-
-	if !exists {
-		return nil
-	}
-
-	message := map[string]interface{}{
-		"type":      "command",
-		"timestamp": time.Now().Format(time.RFC3339),
-		"payload":   command,
+		return fmt.Errorf("drone %s is not connected", droneID)
 	}
 
 	return conn.WriteJSON(message)

@@ -8,26 +8,27 @@ import (
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/v1/request"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 )
 
 type ParcelAutomatUseCase struct {
-	parcelAutomatRepo  ParcelAutomatRepo
-	lockerRepo         LockerRepo
-	internalLockerRepo InternalLockerRepo
-	orderRepo          OrderRepo
-	deliveryRepo       DeliveryRepo
+	parcelAutomatRepo  repo.ParcelAutomatRepo
+	lockerRepo         repo.LockerRepo
+	internalLockerRepo repo.InternalLockerRepo
+	orderRepo          repo.OrderRepo
+	deliveryRepo       repo.DeliveryRepo
 	qrUseCase          *QRUseCase
-	orangePIWebAPI     OrangePIWebAPI
+	orangePIWebAPI     repo.OrangePIWebAPI
 }
 
 func NewParcelAutomatUseCase(
-	parcelAutomatRepo ParcelAutomatRepo,
-	lockerRepo LockerRepo,
-	internalLockerRepo InternalLockerRepo,
-	orderRepo OrderRepo,
-	deliveryRepo DeliveryRepo,
+	parcelAutomatRepo repo.ParcelAutomatRepo,
+	lockerRepo repo.LockerRepo,
+	internalLockerRepo repo.InternalLockerRepo,
+	orderRepo repo.OrderRepo,
+	deliveryRepo repo.DeliveryRepo,
 	qrUseCase *QRUseCase,
-	orangePIWebAPI OrangePIWebAPI,
+	orangePIWebAPI repo.OrangePIWebAPI,
 ) *ParcelAutomatUseCase {
 	return &ParcelAutomatUseCase{
 		parcelAutomatRepo:  parcelAutomatRepo,

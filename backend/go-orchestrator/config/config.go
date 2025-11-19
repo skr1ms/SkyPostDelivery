@@ -23,12 +23,13 @@ type (
 		AdminPanelURL `yaml:"admin_panel_url"`
 		FirstAdmin    `yaml:"full_admin"`
 		SecondAdmin   `yaml:"second_admin"`
-		GinMode       `yaml:"log_level"`
 	}
 
 	App struct {
-		Name    string
-		Version string
+		Name     string
+		Version  string
+		GinMode  string
+		LogLevel string
 	}
 
 	HTTP struct {
@@ -96,10 +97,6 @@ type (
 		Password  string
 		CreatedAt string
 	}
-
-	GinMode struct {
-		Mode string
-	}
 )
 
 func New() (*Config, error) {
@@ -107,8 +104,10 @@ func New() (*Config, error) {
 
 	cfg := &Config{
 		App: App{
-			Name:    getEnv("APP_NAME", "skypost-delivery"),
-			Version: getEnv("APP_VERSION", "1.0.0"),
+			Name:     getEnv("APP_NAME", "skypost-delivery"),
+			Version:  getEnv("APP_VERSION", "1.0.0"),
+			GinMode:  getEnv("GIN_MODE", "realese"),
+			LogLevel: getEnv("LOG_LEVEL", "info"),
 		},
 		HTTP: HTTP{
 			Port: getEnv("GO_ORCHESTRATOR_HTTP_PORT", "8080"),
@@ -164,9 +163,6 @@ func New() (*Config, error) {
 			Phone:     getEnv("SECOND_ADMIN_PHONE", ""),
 			Password:  getEnv("SECOND_ADMIN_PASSWORD", ""),
 			CreatedAt: getEnv("SECOND_ADMIN_CREATED_AT", ""),
-		},
-		GinMode: GinMode{
-			Mode: getEnv("GIN_MODE", "realese"),
 		},
 	}
 

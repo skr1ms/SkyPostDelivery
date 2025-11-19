@@ -8,30 +8,30 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/repo"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq"
 )
 
 type OrderUseCase struct {
-	orderRepo          OrderRepo
-	goodRepo           GoodRepo
-	droneRepo          DroneRepo
-	deliveryRepo       DeliveryRepo
-	parcelAutomatRepo  ParcelAutomatRepo
-	lockerRepo         LockerRepo
-	internalLockerRepo InternalLockerRepo
-	rabbitmqClient     RabbitMQClient
+	orderRepo          repo.OrderRepo
+	goodRepo           repo.GoodRepo
+	droneRepo          repo.DroneRepo
+	deliveryRepo       repo.DeliveryRepo
+	parcelAutomatRepo  repo.ParcelAutomatRepo
+	lockerRepo         repo.LockerRepo
+	internalLockerRepo repo.InternalLockerRepo
+	rabbitmqClient     rabbitmq.RabbitMQClient
 }
 
 func NewOrderUseCase(
-	orderRepo OrderRepo,
-	goodRepo GoodRepo,
-	droneRepo DroneRepo,
-	deliveryRepo DeliveryRepo,
-	parcelAutomatRepo ParcelAutomatRepo,
-	lockerRepo LockerRepo,
-	internalLockerRepo InternalLockerRepo,
-	rabbitmqClient RabbitMQClient,
+	orderRepo repo.OrderRepo,
+	goodRepo repo.GoodRepo,
+	droneRepo repo.DroneRepo,
+	deliveryRepo repo.DeliveryRepo,
+	parcelAutomatRepo repo.ParcelAutomatRepo,
+	lockerRepo repo.LockerRepo,
+	internalLockerRepo repo.InternalLockerRepo,
+	rabbitmqClient rabbitmq.RabbitMQClient,
 ) *OrderUseCase {
 	return &OrderUseCase{
 		orderRepo:          orderRepo,
@@ -116,17 +116,7 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 		}
 	}
 
-	orderRepo, ok := uc.orderRepo.(*repo.OrderRepo)
-	if !ok {
-		uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
-		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
-		if uc.internalLockerRepo != nil && internalCellID != nil {
-			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
-		}
-		return nil, fmt.Errorf("order usecase - CreateOrder: invalid order repo type")
-	}
-
-	order, err := orderRepo.CreateWithCell(ctx, userID, goodID, parcelAutomat.ID, &cell.ID, "pending")
+	order, err := uc.orderRepo.CreateWithCell(ctx, userID, goodID, parcelAutomat.ID, &cell.ID, "pending")
 	if err != nil {
 		uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
 		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
@@ -321,12 +311,7 @@ func (uc *OrderUseCase) ReturnOrder(ctx context.Context, orderID, userID uuid.UU
 		return fmt.Errorf("order usecase - ReturnOrder - goodRepo.UpdateQuantity: %w", err)
 	}
 
-	orderRepo, ok := uc.orderRepo.(*repo.OrderRepo)
-	if !ok {
-		return fmt.Errorf("order usecase - ReturnOrder: invalid order repo type")
-	}
-
-	if _, err := orderRepo.UpdateStatus(ctx, orderID, "cancelled"); err != nil {
+	if _, err := uc.orderRepo.UpdateStatus(ctx, orderID, "cancelled"); err != nil {
 		return fmt.Errorf("order usecase - ReturnOrder - orderRepo.UpdateStatus: %w", err)
 	}
 

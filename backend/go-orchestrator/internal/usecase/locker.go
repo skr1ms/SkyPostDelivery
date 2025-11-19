@@ -6,14 +6,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 )
 
 type LockerUseCase struct {
-	lockerRepo LockerRepo
+	lockerRepo repo.LockerRepo
 }
 
 func NewLockerUseCase(
-	lockerRepo LockerRepo,
+	lockerRepo repo.LockerRepo,
 ) *LockerUseCase {
 	return &LockerUseCase{
 		lockerRepo: lockerRepo,

@@ -17,12 +17,13 @@ type (
 		MinIO            `yaml:"minio"`
 		OrchestratorGRPC `yaml:"orchestrator_grpc"`
 		WebSocket        `yaml:"websocket"`
-		GinMode          `yaml:"log_level"`
 	}
 
 	App struct {
-		Name    string
-		Version string
+		Name     string
+		Version  string
+		GinMode  string
+		LogLevel string
 	}
 
 	HTTP struct {
@@ -52,10 +53,6 @@ type (
 	WebSocket struct {
 		BroadcastInterval int
 	}
-
-	GinMode struct {
-		Mode string
-	}
 )
 
 func New() (*Config, error) {
@@ -63,8 +60,10 @@ func New() (*Config, error) {
 
 	cfg := &Config{
 		App: App{
-			Name:    getEnv("APP_NAME", "skypost-delivery"),
-			Version: getEnv("APP_VERSION", "1.0.0"),
+			Name:     getEnv("APP_NAME", "skypost-delivery"),
+			Version:  getEnv("APP_VERSION", "1.0.0"),
+			GinMode:  getEnv("GIN_MODE", "release"),
+			LogLevel: getEnv("LOG_LEVEL", "info"),
 		},
 		HTTP: HTTP{
 			Port: getEnv("DRONE_SERVICE_HTTP_PORT", "8081"),
@@ -83,13 +82,10 @@ func New() (*Config, error) {
 			BucketRecords: getEnv("MINIO_BUCKET_RECORDS", "records"),
 		},
 		OrchestratorGRPC: OrchestratorGRPC{
-			URL: getEnv("GO_ORCHESTRATOR_GRPC_URL", "localhost:50052"),
+			URL: getEnv("GRPC_GO_ORCHESTRATOR_URL", "localhost:50052"),
 		},
 		WebSocket: WebSocket{
 			BroadcastInterval: getEnvInt("WEBSOCKET_BROADCAST_INTERVAL", 5),
-		},
-		GinMode: GinMode{
-			Mode: getEnv("GIN_MODE", "release"),
 		},
 	}
 

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -18,34 +17,36 @@ import (
 	grpcserver "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/grpc/server"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/middleware"
 	v1 "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/http/v1"
+	repo "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo/persistent"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo/webapi"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/repo"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/webapi"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/logger"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/minio"
 	pb "github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/pb"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/postgres"
-	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/push"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq"
 	"google.golang.org/grpc"
 )
 
 func Run(cfg *config.Config) {
+	logger := logger.New(cfg.LogLevel)
+
 	pg, err := postgres.New(cfg.PG.URL)
 	if err != nil {
-		log.Fatalf("app - Run - postgres.New: %v", err)
+		logger.Error("app - Run - postgres.New", err)
 	}
 	defer pg.Close()
 
 	if err := runMigrations(pg); err != nil {
-		log.Fatalf("app - Run - runMigrations: %v", err)
+		logger.Error("app - Run - runMigrations", err)
 	}
 
 	qrGenerator := qr.NewQRGenerator(cfg.QR.HMACSecret)
 
 	if err := ensureAdminExists(pg, cfg, qrGenerator); err != nil {
-		log.Fatalf("app - Run - ensureAdminExists: %v", err)
+		logger.Error("app - Run - ensureAdminExists", err)
 	}
 
 	minioClient, err := minio.New(
@@ -58,7 +59,7 @@ func Run(cfg *config.Config) {
 		cfg.MinIO.BucketRecords,
 	)
 	if err != nil {
-		log.Fatalf("app - Run - minio.New: %v", err)
+		logger.Error("app - Run - minio.New", err)
 	}
 
 	jwtService := jwt.NewJWTService(
@@ -86,21 +87,21 @@ func Run(cfg *config.Config) {
 
 	rabbitmqClient, err := rabbitmq.NewClient(cfg.RabbitMQ.URL)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+		logger.Error("app - Run - rabbitmq.NewClient", err)
 	}
-	log.Println("Connected to RabbitMQ successfully")
+	defer rabbitmqClient.Close()
 
 	ctx := context.Background()
 
-	var pushSender push.Sender
+	var pushSender webapi.PushSender
 	if cfg.Firebase.CredentialsFile != "" {
-		pushSender, err = push.NewFCMSender(ctx, cfg.Firebase.CredentialsFile)
+		pushSender, err = webapi.NewFCMSender(ctx, cfg.Firebase.CredentialsFile)
 		if err != nil {
-			log.Printf("app - Run - push.NewFCMSender: %v", err)
-			pushSender = push.NewNoopSender()
+			logger.Error("app - Run - FCMSender.New", err)
+			pushSender = webapi.NewNoopSender()
 		}
 	} else {
-		pushSender = push.NewNoopSender()
+		pushSender = webapi.NewNoopSender()
 	}
 
 	notificationUC := usecase.NewNotificationUseCase(deviceRepo, pushSender)
@@ -112,16 +113,16 @@ func Run(cfg *config.Config) {
 	lockerUC := usecase.NewLockerUseCase(lockerRepo)
 	parcelAutomatUC := usecase.NewParcelAutomatUseCase(parcelAutomatRepo, lockerRepo, internalLockerRepo, orderRepo, deliveryRepo, qrUC, orangePIAdapter)
 	go orderUC.StartPendingOrdersWorker(ctx, 30*time.Second)
-	log.Println("Started pending orders worker (checking every 30s)")
+	logger.Info("Started pending orders worker (checking every 30s)", nil)
 
 	go deliveryUC.StartConfirmationConsumer()
-	log.Println("Started delivery confirmation consumer")
+	logger.Info("Started delivery confirmation consumer", nil)
 
-	gin.SetMode(cfg.GinMode.Mode)
+	gin.SetMode(cfg.GinMode)
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(logger))
 	router.Use(middleware.PrometheusMiddleware())
 
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtService)
@@ -157,7 +158,7 @@ func Run(cfg *config.Config) {
 
 	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPC.Port))
 	if err != nil {
-		log.Fatalf("app - Run - net.Listen: %v", err)
+		logger.Error("app - Run - net.Listen", err)
 	}
 
 	grpcServer := grpc.NewServer(
@@ -167,16 +168,16 @@ func Run(cfg *config.Config) {
 	pb.RegisterOrchestratorServiceServer(grpcServer, orchestratorServer)
 
 	go func() {
-		log.Printf("gRPC server started on port %s", cfg.GRPC.Port)
+		logger.Info(fmt.Sprintf("gRPC server started on port %s", cfg.GRPC.Port), nil)
 		if err := grpcServer.Serve(grpcListener); err != nil {
-			log.Fatalf("app - Run - grpcServer.Serve: %v", err)
+			logger.Error("app - Run - grpcServer.Serve", err)
 		}
 	}()
 
 	go func() {
-		log.Printf("HTTP server started on port %s", cfg.HTTP.Port)
+		logger.Info(fmt.Sprintf("HTTP server started on port %s", cfg.HTTP.Port), nil)
 		if err := router.Run(":" + cfg.HTTP.Port); err != nil {
-			log.Fatalf("app - Run - router.Run: %v", err)
+			logger.Error("app - Run - router.Run", err)
 		}
 	}()
 
@@ -184,6 +185,6 @@ func Run(cfg *config.Config) {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	<-interrupt
-	log.Println("app - Run - shutting down")
+	logger.Info("app - Run - shutting down", nil)
 	grpcServer.GracefulStop()
 }

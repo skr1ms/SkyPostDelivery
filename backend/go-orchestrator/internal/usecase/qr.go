@@ -9,15 +9,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/minio"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 )
 
 type QRUseCase struct {
-	qrGenerator QRGeneratorPkg
-	userRepo    UserRepo
-	minioClient MinioPkg
+	qrGenerator qr.QRGeneratorContract
+	userRepo    repo.UserRepo
+	minioClient minio.MinioClient
 }
 
-func NewQRUseCase(qrGenerator QRGeneratorPkg, userRepo UserRepo, minioClient MinioPkg) *QRUseCase {
+func NewQRUseCase(qrGenerator qr.QRGeneratorContract, userRepo repo.UserRepo, minioClient minio.MinioClient) *QRUseCase {
 	return &QRUseCase{
 		qrGenerator: qrGenerator,
 		userRepo:    userRepo,

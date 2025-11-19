@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,9 +16,9 @@ import (
 )
 
 func TestUserUseCase_VerifyPhoneCode_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -53,9 +54,9 @@ func TestUserUseCase_VerifyPhoneCode_Success(t *testing.T) {
 }
 
 func TestUserUseCase_VerifyPhoneCode_InvalidCode(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -80,9 +81,9 @@ func TestUserUseCase_VerifyPhoneCode_InvalidCode(t *testing.T) {
 }
 
 func TestUserUseCase_VerifyPhoneCode_ExpiredCode(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -107,9 +108,9 @@ func TestUserUseCase_VerifyPhoneCode_ExpiredCode(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByPhone_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -135,9 +136,9 @@ func TestUserUseCase_LoginByPhone_Success(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByPhone_NotVerified(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -157,9 +158,9 @@ func TestUserUseCase_LoginByPhone_NotVerified(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByCredentials_ByEmail_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -191,9 +192,9 @@ func TestUserUseCase_LoginByCredentials_ByEmail_Success(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByCredentials_InvalidPassword(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -220,9 +221,9 @@ func TestUserUseCase_LoginByCredentials_InvalidPassword(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByCredentials_PhoneNotVerified(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -260,9 +261,9 @@ func TestUserUseCase_LoginByCredentials_PhoneNotVerified(t *testing.T) {
 }
 
 func TestUserUseCase_LoginByCredentials_UserNotFound(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -281,9 +282,9 @@ func TestUserUseCase_LoginByCredentials_UserNotFound(t *testing.T) {
 }
 
 func TestUserUseCase_RequestPasswordReset_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -309,9 +310,9 @@ func TestUserUseCase_RequestPasswordReset_Success(t *testing.T) {
 }
 
 func TestUserUseCase_RequestPasswordReset_UserNotFound(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -328,9 +329,9 @@ func TestUserUseCase_RequestPasswordReset_UserNotFound(t *testing.T) {
 }
 
 func TestUserUseCase_ResetPassword_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -357,9 +358,9 @@ func TestUserUseCase_ResetPassword_Success(t *testing.T) {
 }
 
 func TestUserUseCase_ResetPassword_InvalidCode(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -382,9 +383,9 @@ func TestUserUseCase_ResetPassword_InvalidCode(t *testing.T) {
 }
 
 func TestUserUseCase_GetUser_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -408,9 +409,9 @@ func TestUserUseCase_GetUser_Success(t *testing.T) {
 }
 
 func TestUserUseCase_GetUserByEmail_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -434,9 +435,9 @@ func TestUserUseCase_GetUserByEmail_Success(t *testing.T) {
 }
 
 func TestUserUseCase_GenerateCode(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -448,9 +449,9 @@ func TestUserUseCase_GenerateCode(t *testing.T) {
 }
 
 func TestUserUseCase_GetUserByID_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -484,9 +485,9 @@ func TestUserUseCase_GetUserByID_Success(t *testing.T) {
 }
 
 func TestUserUseCase_GetUserByID_InvalidUUID(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -503,9 +504,9 @@ func TestUserUseCase_GetUserByID_InvalidUUID(t *testing.T) {
 }
 
 func TestUserUseCase_GetUserByID_NotFound(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -525,9 +526,9 @@ func TestUserUseCase_GetUserByID_NotFound(t *testing.T) {
 }
 
 func TestUserUseCase_Register_Success(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -561,9 +562,9 @@ func TestUserUseCase_Register_Success(t *testing.T) {
 }
 
 func TestUserUseCase_Register_EmailExists(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
@@ -587,9 +588,9 @@ func TestUserUseCase_Register_EmailExists(t *testing.T) {
 }
 
 func TestUserUseCase_Register_PhoneExists(t *testing.T) {
-	mockUserRepo := new(MockUserRepo)
-	mockSMSWebAPI := new(MockSMSWebAPI)
-	mockQRWebAPI := new(MockQRWebAPI)
+	mockUserRepo := new(mocks.MockUserRepo)
+	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
+	mockQRWebAPI := new(mocks.MockQRWebAPI)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
 	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)

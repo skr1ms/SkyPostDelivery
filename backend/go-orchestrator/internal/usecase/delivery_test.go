@@ -7,15 +7,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDeliveryUseCase_GetDelivery_Success(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -37,11 +38,11 @@ func TestDeliveryUseCase_GetDelivery_Success(t *testing.T) {
 }
 
 func TestDeliveryUseCase_GetDelivery_NotFound(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -58,11 +59,11 @@ func TestDeliveryUseCase_GetDelivery_NotFound(t *testing.T) {
 }
 
 func TestDeliveryUseCase_UpdateStatus_Success(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -91,11 +92,11 @@ func TestDeliveryUseCase_UpdateStatus_Success(t *testing.T) {
 }
 
 func TestDeliveryUseCase_UpdateStatus_Delivered(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -125,11 +126,11 @@ func TestDeliveryUseCase_UpdateStatus_Delivered(t *testing.T) {
 }
 
 func TestDeliveryUseCase_ListByStatus_Success(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -151,11 +152,11 @@ func TestDeliveryUseCase_ListByStatus_Success(t *testing.T) {
 }
 
 func TestDeliveryUseCase_ConfirmGoodsLoaded_Success(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
@@ -190,7 +191,7 @@ func TestDeliveryUseCase_ConfirmGoodsLoaded_Success(t *testing.T) {
 	mockOrderRepo.On("GetByID", ctx, orderID).Return(order, nil)
 	mockOrderRepo.On("UpdateStatus", ctx, orderID, "delivered").Return(order, nil)
 	mockLockerRepo.On("UpdateCellStatus", ctx, lockerCellID, "occupied").Return(nil)
-	mockInternalLockerRepo.On("UpdateCellStatus", ctx, internalCellID, "available").Return(nil)
+	mockInternalLockerRepo.On("UpdateCellStatus", ctx, internalCellID, "occupied").Return(nil)
 
 	err := uc.ConfirmGoodsLoaded(ctx, orderID, lockerCellID)
 
@@ -201,11 +202,11 @@ func TestDeliveryUseCase_ConfirmGoodsLoaded_Success(t *testing.T) {
 }
 
 func TestDeliveryUseCase_ConfirmGoodsLoaded_DeliveryNotFound(t *testing.T) {
-	mockDeliveryRepo := new(MockDeliveryRepo)
-	mockOrderRepo := new(MockOrderRepo)
-	mockLockerRepo := new(MockLockerRepo)
-	mockInternalLockerRepo := new(MockInternalLockerRepo)
-	mockRabbitMQClient := new(MockRabbitMQClient)
+	mockDeliveryRepo := new(mocks.MockDeliveryRepo)
+	mockOrderRepo := new(mocks.MockOrderRepo)
+	mockLockerRepo := new(mocks.MockLockerRepo)
+	mockInternalLockerRepo := new(mocks.MockInternalLockerRepo)
+	mockRabbitMQClient := new(mocks.MockRabbitMQClient)
 	uc := NewDeliveryUseCase(mockDeliveryRepo, mockOrderRepo, mockLockerRepo, mockInternalLockerRepo, mockRabbitMQClient, nil)
 
 	ctx := context.Background()
