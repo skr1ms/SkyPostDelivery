@@ -9,6 +9,7 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 )
 
 type RabbitMQClient interface {
@@ -27,14 +28,14 @@ type Client struct {
 	notifyReturn  chan amqp.Return
 }
 
-func NewClient(url string) (*Client, error) {
+func NewClient(cfg *config.RabbitMQ) (*Client, error) {
 	client := &Client{
 		done:          make(chan struct{}),
 		notifyConfirm: make(chan amqp.Confirmation, 1),
 		notifyReturn:  make(chan amqp.Return, 10),
 	}
 
-	conn, err := client.connect(url)
+	conn, err := client.connect(cfg.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func NewClient(url string) (*Client, error) {
 		return nil, err
 	}
 
-	go client.handleReconnect(url)
+	go client.handleReconnect(cfg.URL)
 	go client.handleReturns()
 
 	return client, nil

@@ -7,8 +7,12 @@ class QRRepositoryImpl implements QRRepository {
   const QRRepositoryImpl(this.remoteDataSource);
 
   @override
+  Future<QRResult> getMyQR() {
+    return remoteDataSource.getMyQR();
+  }
+
+  @override
   Future<QRResult> refreshQR() {
     return remoteDataSource.refreshQR();
   }
 }
-

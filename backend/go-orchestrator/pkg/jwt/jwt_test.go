@@ -36,7 +36,8 @@ func TestJWTService_GenerateTokenPair(t *testing.T) {
 	assert.NotNil(t, tokenPair)
 	assert.NotEmpty(t, tokenPair.AccessToken)
 	assert.NotEmpty(t, tokenPair.RefreshToken)
-	assert.Greater(t, tokenPair.ExpiresAt, time.Now().Unix())
+	assert.Greater(t, tokenPair.AccessExpiresAt, time.Now().Unix())
+	assert.Greater(t, tokenPair.RefreshExpiresAt, time.Now().Unix())
 }
 
 func TestJWTService_ValidateAccessToken_Success(t *testing.T) {

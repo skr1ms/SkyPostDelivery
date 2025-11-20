@@ -10,6 +10,7 @@ import (
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/entity"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/jwt"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,6 +19,7 @@ type UserUseCase struct {
 	smsWebAPI  repo.SMSAeroWebAPI
 	qrWebAPI   repo.QRWebAPI
 	jwtService *jwt.JWTService
+	validator  validator.Validator
 }
 
 func NewUserUseCase(
@@ -25,12 +27,14 @@ func NewUserUseCase(
 	smsWebAPI repo.SMSAeroWebAPI,
 	qrWebAPI repo.QRWebAPI,
 	jwtService *jwt.JWTService,
+	validator validator.Validator,
 ) *UserUseCase {
 	return &UserUseCase{
 		userRepo:   userRepo,
 		smsWebAPI:  smsWebAPI,
 		qrWebAPI:   qrWebAPI,
 		jwtService: jwtService,
+		validator:  validator,
 	}
 }
 
@@ -44,11 +48,11 @@ func (uc *UserUseCase) VerifyPhoneCode(ctx context.Context, phone, code string) 
 		return nil, "", fmt.Errorf("UserUseCase - VerifyPhoneCode - GetByPhone: %w", err)
 	}
 
-	if user.VerificationCode == nil || *user.VerificationCode != code {
+	if !user.IsCodeValid(code) {
 		return nil, "", fmt.Errorf("invalid verification code")
 	}
 
-	if user.CodeExpiresAt == nil || time.Now().After(*user.CodeExpiresAt) {
+	if user.IsCodeExpired() {
 		return nil, "", fmt.Errorf("verification code expired")
 	}
 
@@ -57,12 +61,7 @@ func (uc *UserUseCase) VerifyPhoneCode(ctx context.Context, phone, code string) 
 		return nil, "", fmt.Errorf("UserUseCase - VerifyPhoneCode - VerifyPhone: %w", err)
 	}
 
-	email := ""
-	if user.Email != nil {
-		email = *user.Email
-	}
-
-	qrCode, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, email, user.FullName)
+	qrCode, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, user.GetEmail(), user.FullName)
 	if err != nil {
 		return nil, "", fmt.Errorf("UserUseCase - VerifyPhoneCode - GenerateQR: %w", err)
 	}
@@ -127,12 +126,7 @@ func (uc *UserUseCase) LoginByCredentials(ctx context.Context, login, password s
 		return nil, "", fmt.Errorf("PHONE_NOT_VERIFIED:%s", *user.PhoneNumber)
 	}
 
-	email := ""
-	if user.Email != nil {
-		email = *user.Email
-	}
-
-	qrCode, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, email, user.FullName)
+	qrCode, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, user.GetEmail(), user.FullName)
 	if err != nil {
 		return nil, "", fmt.Errorf("UserUseCase - LoginByCredentials - GenerateQR: %w", err)
 	}
@@ -141,6 +135,22 @@ func (uc *UserUseCase) LoginByCredentials(ctx context.Context, login, password s
 }
 
 func (uc *UserUseCase) Register(ctx context.Context, fullName, email, phone, password string) (*entity.User, error) {
+	phone = validator.NormalizeRussianPhone(phone)
+	err := uc.validator.ValidateVar(phone, "russian_phone")
+	if err != nil {
+		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)
+	}
+	
+	err = uc.validator.ValidateVar(email, "custom_email")
+	if err != nil {
+		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)
+	}
+	
+	err = uc.validator.ValidateVar(password, "strong_password")
+	if err != nil {
+		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)
+	}
+
 	existingUser, _ := uc.userRepo.GetByEmail(ctx, email)
 	if existingUser != nil {
 		return nil, fmt.Errorf("user with this email already exists")
@@ -208,12 +218,17 @@ func (uc *UserUseCase) ResetPassword(ctx context.Context, phone, code, newPasswo
 		return fmt.Errorf("user not found")
 	}
 
-	if user.VerificationCode == nil || *user.VerificationCode != code {
+	if !user.IsCodeValid(code) {
 		return fmt.Errorf("invalid verification code")
 	}
 
-	if user.CodeExpiresAt == nil || time.Now().After(*user.CodeExpiresAt) {
+	if user.IsCodeExpired() {
 		return fmt.Errorf("verification code expired")
+	}
+
+	err = uc.validator.ValidateVar(newPassword, "strong_password")
+	if err != nil {
+		return fmt.Errorf("UserUseCase - ResetPassword - ValidateVar: %w", err)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -265,18 +280,13 @@ func (uc *UserUseCase) GetUserByID(ctx context.Context, userIDStr string) (*enti
 		return nil, "", fmt.Errorf("UserUseCase - GetUserByID - GetByID: %w", err)
 	}
 
-	email := ""
-	if user.Email != nil {
-		email = *user.Email
-	}
-
 	var qrCode string
 	qrExpired := user.QRExpiresAt == nil || time.Now().After(*user.QRExpiresAt)
 
 	if qrExpired {
 		fmt.Printf("QR expired or not set for user %s. Regenerating QR. QRExpiresAt: %v", user.ID, user.QRExpiresAt)
 
-		qrImageBase64, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, email, user.FullName)
+		qrImageBase64, err := uc.qrWebAPI.GenerateQR(ctx, user.ID, user.GetEmail(), user.FullName)
 		if err != nil {
 			fmt.Printf("Failed to generate QR for user %s: %v", user.ID, err)
 			return user, "", nil
@@ -294,7 +304,7 @@ func (uc *UserUseCase) GetUserByID(ctx context.Context, userIDStr string) (*enti
 
 		qrCode = qrImageBase64
 	} else {
-		qrCode, err = uc.qrWebAPI.GenerateQR(ctx, user.ID, email, user.FullName)
+		qrCode, err = uc.qrWebAPI.GenerateQR(ctx, user.ID, user.GetEmail(), user.FullName)
 		if err != nil {
 			fmt.Printf("Failed to generate QR for user %s: %v", user.ID, err)
 			return user, "", nil

@@ -6,19 +6,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewQRGenerator(t *testing.T) {
-	secret := "test-secret"
-	generator := NewQRGenerator(secret)
+	cfg := &config.QR{HMACSecret: "test-secret"}
+	generator := NewQRGenerator(cfg)
 
 	assert.NotNil(t, generator)
-	assert.Equal(t, secret, generator.hmacSecret)
+	assert.Equal(t, cfg.HMACSecret, generator.hmacSecret)
 }
 
 func TestQRGenerator_GenerateQRCode_Success(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 	email := "test@example.com"
 	fullName := "Test User"
@@ -38,7 +39,7 @@ func TestQRGenerator_GenerateQRCode_Success(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_Success(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 	email := "test@example.com"
 	fullName := "Test User"
@@ -60,7 +61,7 @@ func TestQRGenerator_ValidateQRCode_Success(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_ExpiredQR(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 
 	qrData := &QRData{
@@ -86,7 +87,7 @@ func TestQRGenerator_ValidateQRCode_ExpiredQR(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_InvalidSignature(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 
 	qrData := &QRData{
@@ -109,7 +110,7 @@ func TestQRGenerator_ValidateQRCode_InvalidSignature(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_TamperedData(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 
 	qrData, _, err := generator.GenerateQRCode(userID, "test@example.com", "Test User")
@@ -128,7 +129,7 @@ func TestQRGenerator_ValidateQRCode_TamperedData(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_InvalidJSON(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 
 	validatedData, err := generator.ValidateQRCode("{invalid json")
 
@@ -137,8 +138,8 @@ func TestQRGenerator_ValidateQRCode_InvalidJSON(t *testing.T) {
 }
 
 func TestQRGenerator_ValidateQRCode_DifferentSecret(t *testing.T) {
-	generator1 := NewQRGenerator("secret1")
-	generator2 := NewQRGenerator("secret2")
+	generator1 := NewQRGenerator(&config.QR{HMACSecret: "secret1"})
+	generator2 := NewQRGenerator(&config.QR{HMACSecret: "secret2"})
 
 	userID := uuid.New()
 	qrData, _, err := generator1.GenerateQRCode(userID, "test@example.com", "Test User")
@@ -155,7 +156,7 @@ func TestQRGenerator_ValidateQRCode_DifferentSecret(t *testing.T) {
 }
 
 func TestQRGenerator_RefreshQRCode(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 	email := "test@example.com"
 	fullName := "Test User"
@@ -178,7 +179,7 @@ func TestQRGenerator_RefreshQRCode(t *testing.T) {
 }
 
 func TestQRGenerator_generateSignature(t *testing.T) {
-	generator := NewQRGenerator("test-secret")
+	generator := NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	userID := uuid.New()
 	now := time.Now()
 

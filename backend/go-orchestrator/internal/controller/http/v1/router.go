@@ -21,20 +21,20 @@ func NewRouter(
 	qrUC *usecase.QRUseCase,
 	notificationUC *usecase.NotificationUseCase,
 	jwtMiddleware *middleware.JWTMiddleware,
+	limiter *middleware.Limiter,
 ) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	v1 := router.Group("/api/v1")
-	v1.Use(middleware.APIRateLimiter())
 	{
 		protected := v1.Group("")
 		protected.Use(jwtMiddleware.RequireAuth())
 
-		newUserRoutes(v1, userUC, jwtMiddleware.JWTService, notificationUC, protected, middleware.AuthRateLimiter())
-		newQRRoutes(v1, qrUC, jwtMiddleware, middleware.QRScanRateLimiter())
+		newUserRoutes(v1, userUC, jwtMiddleware.JWTService, notificationUC, protected, limiter.MiddleWare(middleware.UserPeriod, middleware.UserRateLimit))
+		newQRRoutes(v1, qrUC, jwtMiddleware, limiter.MiddleWare(middleware.QrPeriod, middleware.QrRateLimit))
 		newLockerRoutes(v1, lockerUC)
 		newGoodRoutes(protected, goodUC)
-		newOrderRoutes(protected, orderUC, middleware.OrderCreationRateLimiter())
+		newOrderRoutes(protected, orderUC, limiter.MiddleWare(middleware.OrderPeriod, middleware.OrderRateLimit))
 		newDeliveryRoutes(protected, deliveryUC)
 		newDroneRoutes(protected, droneUC)
 		newParcelAutomatRoutes(v1, protected, parcelAutomatUC)

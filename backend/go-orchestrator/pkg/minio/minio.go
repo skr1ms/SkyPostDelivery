@@ -8,10 +8,12 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 )
 
 type MinioClient interface {
 	UploadFile(ctx context.Context, objectName string, reader io.Reader, objectSize int64, contentType string) error
+	GetFile(ctx context.Context, objectName string) (io.ReadCloser, error)
 	GetFileURL(objectName string) string
 	DeleteFile(ctx context.Context, objectName string) error
 	EnsureBucket(ctx context.Context, bucketNames ...string) error
@@ -23,27 +25,22 @@ type Client struct {
 	publicURL string
 }
 
-func New(endpoint, accessKey, secretKey, publicURL string, useSSL bool, initBuckets ...string) (*Client, error) {
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: useSSL,
+func New(cfg *config.MinIO) (*Client, error) {
+	minioClient, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: cfg.UseSSL,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
 
-	defaultBucket := ""
-	if len(initBuckets) > 0 {
-		defaultBucket = initBuckets[0]
-	}
-
 	client := &Client{
 		client:    minioClient,
-		bucket:    defaultBucket,
-		publicURL: publicURL,
+		bucket:    cfg.BucketQR,
+		publicURL: cfg.PublicURL,
 	}
 
-	if err := client.EnsureBucket(context.Background(), initBuckets...); err != nil {
+	if err := client.EnsureBucket(context.Background(), cfg.BucketQR, cfg.BucketRecords); err != nil {
 		return nil, fmt.Errorf("failed to ensure buckets exist: %w", err)
 	}
 
@@ -99,6 +96,14 @@ func (c *Client) UploadFile(ctx context.Context, objectName string, reader io.Re
 	}
 
 	return nil
+}
+
+func (c *Client) GetFile(ctx context.Context, objectName string) (io.ReadCloser, error) {
+	object, err := c.client.GetObject(ctx, c.bucket, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("minio - GetFile: %w", err)
+	}
+	return object, nil
 }
 
 func (c *Client) GetFileURL(objectName string) string {

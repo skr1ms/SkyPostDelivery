@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/skr1ms/SkyPostDelivery/drone-service/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -18,8 +19,8 @@ type OrchestratorClient struct {
 	client OrchestratorGRPCClient
 }
 
-func NewOrchestratorGRPCClient(address string) (*OrchestratorClient, error) {
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewOrchestratorGRPCClient(cfg *config.OrchestratorGRPC) (*OrchestratorClient, error) {
+	conn, err := grpc.NewClient(cfg.URL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to orchestrator: %w", err)
 	}

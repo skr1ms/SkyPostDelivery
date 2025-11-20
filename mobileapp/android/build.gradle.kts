@@ -22,6 +22,20 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            val android = project.extensions.findByName("android")
+            if (android != null) {
+                try {
+                    val compileOptions = (android as Any).javaClass.getMethod("getCompileOptions").invoke(android)
+                    compileOptions?.javaClass?.getMethod("setSourceCompatibility", Any::class.java)?.invoke(compileOptions, org.gradle.api.JavaVersion.VERSION_11)
+                    compileOptions?.javaClass?.getMethod("setTargetCompatibility", Any::class.java)?.invoke(compileOptions, org.gradle.api.JavaVersion.VERSION_11)
+                } catch (e: Exception) {
+                }
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

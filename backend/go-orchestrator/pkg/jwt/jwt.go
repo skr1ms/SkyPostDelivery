@@ -1,11 +1,16 @@
 package jwt
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+)
+
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
 )
 
 type JWTService struct {
@@ -16,17 +21,19 @@ type JWTService struct {
 }
 
 type CustomClaims struct {
-	UserID   uuid.UUID `json:"user_id"`
-	Email    string    `json:"email"`
-	FullName string    `json:"full_name"`
-	Role     string    `json:"role,omitempty"`
+	UserID    uuid.UUID `json:"user_id"`
+	Email     string    `json:"email"`
+	FullName  string    `json:"full_name"`
+	Role      string    `json:"role,omitempty"`
+	TokenType string    `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
 type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresAt    int64  `json:"expires_at"`
+	AccessToken      string `json:"access_token"`
+	RefreshToken     string `json:"refresh_token"`
+	AccessExpiresAt  int64  `json:"access_expires_at"`
+	RefreshExpiresAt int64  `json:"refresh_expires_at"`
 }
 
 func NewJWTService(accessSecret, refreshSecret string, accessTTL, refreshTTL time.Duration) *JWTService {
@@ -44,10 +51,11 @@ func (j *JWTService) GenerateTokenPair(userID uuid.UUID, email, name, role strin
 	refreshExpiry := now.Add(j.refreshTTL)
 
 	accessClaims := &CustomClaims{
-		UserID:   userID,
-		Email:    email,
-		FullName: name,
-		Role:     role,
+		UserID:    userID,
+		Email:     email,
+		FullName:  name,
+		Role:      role,
+		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(accessExpiry),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -57,10 +65,11 @@ func (j *JWTService) GenerateTokenPair(userID uuid.UUID, email, name, role strin
 	}
 
 	refreshClaims := &CustomClaims{
-		UserID:   userID,
-		Email:    email,
-		FullName: name,
-		Role:     role,
+		UserID:    userID,
+		Email:     email,
+		FullName:  name,
+		Role:      role,
+		TokenType: TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(refreshExpiry),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -72,64 +81,71 @@ func (j *JWTService) GenerateTokenPair(userID uuid.UUID, email, name, role strin
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessTokenString, err := accessToken.SignedString(j.accessSecret)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshTokenString, err := refreshToken.SignedString(j.refreshSecret)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
 	return &TokenPair{
-		AccessToken:  accessTokenString,
-		RefreshToken: refreshTokenString,
-		ExpiresAt:    accessExpiry.Unix(),
+		AccessToken:      accessTokenString,
+		RefreshToken:     refreshTokenString,
+		AccessExpiresAt:  accessExpiry.Unix(),
+		RefreshExpiresAt: refreshExpiry.Unix(),
 	}, nil
 }
 
 func (j *JWTService) ValidateAccessToken(tokenString string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return j.accessSecret, nil
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to validate access token: %w", err)
 	}
 
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
+		if claims.TokenType != TokenTypeAccess {
+			return nil, fmt.Errorf("invalid token type")
+		}
 		return claims, nil
 	}
 
-	return nil, errors.New("invalid token")
+	return nil, fmt.Errorf("invalid token")
 }
 
 func (j *JWTService) ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return j.refreshSecret, nil
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to validate refresh token: %w", err)
 	}
 
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
+		if claims.TokenType != TokenTypeRefresh {
+			return nil, fmt.Errorf("invalid token type")
+		}
 		return claims, nil
 	}
 
-	return nil, errors.New("invalid refresh token")
+	return nil, fmt.Errorf("invalid refresh token")
 }
 
 func (j *JWTService) RefreshTokens(refreshTokenString string) (*TokenPair, error) {
 	claims, err := j.ValidateRefreshToken(refreshTokenString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to validate refresh token: %w", err)
 	}
 
 	return j.GenerateTokenPair(claims.UserID, claims.Email, claims.FullName, claims.Role)

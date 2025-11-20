@@ -8,6 +8,11 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 mobileapp/android/app/google-services.json
+**/firebase-service-account.json
+**/*firebase-adminsdk*.json
+**/credentials.json
+**/googleFirebase/**
+mobileapp/android/app/google-services.json
 /build
 .DS_Store
 /captures

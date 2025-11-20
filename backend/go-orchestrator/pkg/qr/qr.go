@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 )
 
 type QRGeneratorContract interface {
@@ -26,9 +27,9 @@ type QRGenerator struct {
 	hmacSecret string
 }
 
-func NewQRGenerator(hmacSecret string) *QRGenerator {
+func NewQRGenerator(cfg *config.QR) *QRGenerator {
 	return &QRGenerator{
-		hmacSecret: hmacSecret,
+		hmacSecret: cfg.HMACSecret,
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/config"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/internal/controller/http/middleware"
 	v1 "github.com/skr1ms/SkyPostDelivery/drone-service/internal/controller/http/v1"
@@ -22,30 +21,33 @@ import (
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/minio"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/postgres"
 	"github.com/skr1ms/SkyPostDelivery/drone-service/pkg/rabbitmq"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func Run(cfg *config.Config) {
 	ctx := context.Background()
 	logger := logger.New(cfg.LogLevel)
 
-	pg, err := postgres.New(cfg.PG.URL)
+	prometheusMiddleware := ginprometheus.NewPrometheus("drone-service")
+
+	pg, err := postgres.New(&cfg.PG)
 	if err != nil {
 		logger.Error("app - Run - postgres.New", err)
 	}
 	defer pg.Close()
 
-	rabbitmqClient, err := rabbitmq.NewClient(cfg.RabbitMQ.URL)
+	rabbitmqClient, err := rabbitmq.NewClient(&cfg.RabbitMQ)
 	if err != nil {
 		logger.Error("app - Run - rabbitmq.NewClient", err)
 	}
 	defer rabbitmqClient.Close()
 
-	minioClient, err := minio.New(cfg.MinIO)
+	minioClient, err := minio.New(&cfg.MinIO)
 	if err != nil {
 		logger.Error("app - Run - minio.New", err)
 	}
 
-	orchestratorGRPCClient, err := grpc.NewOrchestratorGRPCClient(cfg.OrchestratorGRPC.URL)
+	orchestratorGRPCClient, err := grpc.NewOrchestratorGRPCClient(&cfg.OrchestratorGRPC)
 	if err != nil {
 		logger.Error("app - Run - grpc.NewOrchestratorGRPCClient", err)
 	}
@@ -111,10 +113,8 @@ func Run(cfg *config.Config) {
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger(logger))
-	router.Use(middleware.PrometheusMiddleware())
 	router.Use(middleware.CORS())
-
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	prometheusMiddleware.Use(router)
 
 	v1.NewRouter(router, droneWSHandler, adminWSHandler, videoHandler, droneManager)
 

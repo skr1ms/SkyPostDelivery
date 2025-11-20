@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ type (
 		HTTP          `yaml:"http"`
 		GRPC          `yaml:"grpc"`
 		PG            `yaml:"postgres"`
+		Redis         `yaml:"redis"`
 		JWT           `yaml:"jwt"`
 		QR            `yaml:"qr"`
 		MinIO         `yaml:"minio"`
@@ -42,6 +44,12 @@ type (
 
 	PG struct {
 		URL string
+	}
+
+	Redis struct {
+		URL      string
+		Password string
+		DB       int
 	}
 
 	JWT struct {
@@ -77,6 +85,7 @@ type (
 
 	Firebase struct {
 		CredentialsFile string
+		ProjectID       string
 	}
 
 	AdminPanelURL struct {
@@ -118,6 +127,11 @@ func New() (*Config, error) {
 		PG: PG{
 			URL: getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/skypost-delivery?sslmode=disable"),
 		},
+		Redis: Redis{
+			URL:      getEnv("REDIS_URL", "redis://localhost:6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvInt("REDIS_DB", 0),
+		},
 		JWT: JWT{
 			AccessSecret:  getEnv("JWT_ACCESS_SECRET", "your-secret-key-change-in-production"),
 			RefreshSecret: getEnv("JWT_REFRESH_SECRET", "your-refresh-secret-key-change-in-production"),
@@ -145,7 +159,8 @@ func New() (*Config, error) {
 			URL: getEnv("RABBITMQ_URL", "amqp://admin:admin@localhost:5672/"),
 		},
 		Firebase: Firebase{
-			CredentialsFile: getEnv("FIREBASE_CREDENTIALS_FILE", ""),
+			CredentialsFile: getEnv("FIREBASE_CREDENTIALS_FILE_IN_DOCKER", ""),
+			ProjectID:       getEnv("FIREBASE_PROJECT_ID", ""),
 		},
 		AdminPanelURL: AdminPanelURL{
 			URL: getEnv("ADMIN_PANEL_URL", "http://localhost:3000"),
@@ -172,6 +187,17 @@ func New() (*Config, error) {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return strings.TrimSpace(value)
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
+			return defaultValue
+		}
+		return intValue
 	}
 	return defaultValue
 }

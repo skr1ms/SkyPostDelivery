@@ -95,23 +95,19 @@ func (r *authRoutes) verifyPhone(c *gin.Context) {
 		return
 	}
 
-	email := ""
-	if user.Email != nil {
-		email = *user.Email
-	}
-
-	tokenPair, err := r.jwtService.GenerateTokenPair(user.ID, email, user.FullName, user.Role)
+	tokenPair, err := r.jwtService.GenerateTokenPair(user.ID, user.GetEmail(), user.FullName, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error{Error: "Failed to generate tokens"})
 		return
 	}
 
 	c.JSON(http.StatusOK, response.Login{
-		User:         user,
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-		ExpiresAt:    tokenPair.ExpiresAt,
-		QRCode:       qrCode,
+		User:             user,
+		AccessToken:      tokenPair.AccessToken,
+		RefreshToken:     tokenPair.RefreshToken,
+		AccessExpiresAt:  tokenPair.AccessExpiresAt,
+		RefreshExpiresAt: tokenPair.RefreshExpiresAt,
+		QRCode:           qrCode,
 	})
 }
 
@@ -139,23 +135,19 @@ func (r *authRoutes) login(c *gin.Context) {
 		return
 	}
 
-	email := ""
-	if user.Email != nil {
-		email = *user.Email
-	}
-
-	tokenPair, err := r.jwtService.GenerateTokenPair(user.ID, email, user.FullName, user.Role)
+	tokenPair, err := r.jwtService.GenerateTokenPair(user.ID, user.GetEmail(), user.FullName, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error{Error: "Failed to generate tokens"})
 		return
 	}
 
 	c.JSON(http.StatusOK, response.Login{
-		User:         user,
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-		ExpiresAt:    tokenPair.ExpiresAt,
-		QRCode:       qrCode,
+		User:             user,
+		AccessToken:      tokenPair.AccessToken,
+		RefreshToken:     tokenPair.RefreshToken,
+		AccessExpiresAt:  tokenPair.AccessExpiresAt,
+		RefreshExpiresAt: tokenPair.RefreshExpiresAt,
+		QRCode:           qrCode,
 	})
 }
 
@@ -312,9 +304,10 @@ func (r *authRoutes) refresh(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response.RefreshToken{
-		AccessToken:  newTokenPair.AccessToken,
-		RefreshToken: newTokenPair.RefreshToken,
-		ExpiresAt:    newTokenPair.ExpiresAt,
+		AccessToken:      newTokenPair.AccessToken,
+		RefreshToken:     newTokenPair.RefreshToken,
+		AccessExpiresAt:  newTokenPair.AccessExpiresAt,
+		RefreshExpiresAt: newTokenPair.RefreshExpiresAt,
 	})
 }
 

@@ -59,6 +59,8 @@ void main() async {
             registerUseCase: di.registerUseCase,
             verifyPhoneUseCase: di.verifyPhoneUseCase,
             getMeUseCase: di.getMeUseCase,
+            getMyQRUseCase: di.getMyQRUseCase,
+            refreshQRUseCase: di.refreshQRUseCase,
             localDataSource: di.authLocalDataSource,
             httpClient: di.httpClient,
             connectivityService: di.connectivityService,

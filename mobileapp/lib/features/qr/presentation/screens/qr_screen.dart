@@ -17,6 +17,7 @@ class QRScreen extends StatefulWidget {
 class _QRScreenState extends State<QRScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -28,6 +29,29 @@ class _QRScreenState extends State<QRScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isLoading) {
+      _loadQR();
+    }
+  }
+
+  Future<void> _loadQR() async {
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    try {
+      await authProvider.loadMyQR();
+    } catch (e) {
+      await authProvider.loadQRFromLocalStorage();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _pulseController.dispose();
     super.dispose();
@@ -35,6 +59,16 @@ class _QRScreenState extends State<QRScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: AnimatedBackground(
+          child: SafeArea(
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: AnimatedBackground(
         child: SafeArea(

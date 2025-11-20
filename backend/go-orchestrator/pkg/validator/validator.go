@@ -6,6 +6,10 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type Validator interface {
+	ValidateVar(field any, tag string) error
+}
+
 var (
 	russianPhoneRegex = regexp.MustCompile(`^(\+7|7|8)?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$`)
 	emailRegex        = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
@@ -34,7 +38,7 @@ func (cv *CustomValidator) ValidateVar(field any, tag string) error {
 	return cv.validator.Var(field, tag)
 }
 
-func validateRussianPhone(fl validator.FieldLevel) bool {
+func ValidateRussianPhoneField(fl validator.FieldLevel) bool {
 	phone := fl.Field().String()
 	if phone == "" {
 		return false
@@ -42,7 +46,7 @@ func validateRussianPhone(fl validator.FieldLevel) bool {
 	return russianPhoneRegex.MatchString(phone)
 }
 
-func validateStrongPassword(fl validator.FieldLevel) bool {
+func ValidateStrongPasswordField(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 	if len(password) < 6 {
 		return false
@@ -53,12 +57,24 @@ func validateStrongPassword(fl validator.FieldLevel) bool {
 	return passwordRegex.MatchString(password)
 }
 
-func validateEmail(fl validator.FieldLevel) bool {
+func ValidateEmailField(fl validator.FieldLevel) bool {
 	email := fl.Field().String()
 	if email == "" {
 		return false
 	}
 	return emailRegex.MatchString(email)
+}
+
+func validateRussianPhone(fl validator.FieldLevel) bool {
+	return ValidateRussianPhoneField(fl)
+}
+
+func validateStrongPassword(fl validator.FieldLevel) bool {
+	return ValidateStrongPasswordField(fl)
+}
+
+func validateEmail(fl validator.FieldLevel) bool {
+	return ValidateEmailField(fl)
 }
 
 func NormalizeRussianPhone(phone string) string {

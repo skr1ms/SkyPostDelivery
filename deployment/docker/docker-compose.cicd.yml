@@ -21,6 +21,24 @@ services:
     networks:
       - skypost-delivery-network
 
+  redis:
+    image: redis:latest
+    container_name: skypost-delivery-redis
+    env_file:
+      - ../../.env.prod
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:4.2.0-rc.1-management
     container_name: skypost-delivery-rabbitmq
@@ -115,7 +133,7 @@ services:
       SECOND_ADMIN_PHONE: ${SECOND_ADMIN_PHONE}
       SECOND_ADMIN_PASSWORD: ${SECOND_ADMIN_PASSWORD}
       SECOND_ADMIN_CREATED_AT: ${SECOND_ADMIN_CREATED_AT}
-      FIREBASE_CREDENTIALS_FILE: ${FIREBASE_CREDENTIALS_FILE}
+      FIREBASE_CREDENTIALS_FILE_IN_DOCKER: ${FIREBASE_CREDENTIALS_FILE_IN_DOCKER}
       GIN_MODE: ${GIN_MODE:-release}
     expose:
       - "${GO_ORCHESTRATOR_HTTP_PORT:-8080}"
@@ -128,11 +146,13 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - skypost-delivery-network
     volumes:
-      - ${FIREBASE_CREDENTIALS_PATH:-./secrets/firebase-service-account.json}:/app/secrets/firebase-service-account.json:ro
+      - ${FIREBASE_CREDENTIALS_FILE_ON_YOUR_OS:-./secrets/firebase-service-account.json}:/app/secrets/firebase-service-account.json:ro
 
   drone-service:
     image: ${REGISTRY_IMAGE}/drone-service:${IMAGE_TAG:-latest}
@@ -308,6 +328,7 @@ volumes:
   postgres_data:
   minio_data:
   rabbitmq_data:
+  redis_data:
   prometheus_data:
   grafana_data:
   loki_data:

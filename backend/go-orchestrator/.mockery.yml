@@ -36,3 +36,11 @@ packages:
       filename: 'MinioClient.go'
       pkgname: 'mocks'
       structname: 'MockMinioClient'
+
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/validator:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'Validator.go'
+      pkgname: 'mocks'
+      structname: 'MockValidator'

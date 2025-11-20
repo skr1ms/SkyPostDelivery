@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/skr1ms/SkyPostDelivery/drone-service/config"
 )
 
 const (
@@ -14,8 +15,8 @@ const (
 	connTimeout  = time.Second
 )
 
-func New(url string) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(url)
+func New(cfg *config.PG) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("postgres - New - pgxpool.ParseConfig: %w", err)
 	}

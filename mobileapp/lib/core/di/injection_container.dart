@@ -30,6 +30,7 @@ import '../../features/orders/domain/usecases/return_order_usecase.dart';
 import '../../features/qr/data/datasources/qr_remote_datasource.dart';
 import '../../features/qr/data/repositories/qr_repository_impl.dart';
 import '../../features/qr/domain/repositories/qr_repository.dart';
+import '../../features/qr/domain/usecases/get_my_qr_usecase.dart';
 import '../../features/qr/domain/usecases/refresh_qr_usecase.dart';
 import '../../features/notifications/data/datasources/notification_remote_datasource.dart';
 import '../../features/notifications/data/repositories/notification_repository_impl.dart';
@@ -62,6 +63,7 @@ class InjectionContainer {
   late final CreateMultipleOrdersUseCase createMultipleOrdersUseCase;
   late final GetUserOrdersUseCase getUserOrdersUseCase;
   late final ReturnOrderUseCase returnOrderUseCase;
+  late final GetMyQRUseCase getMyQRUseCase;
   late final RefreshQRUseCase refreshQRUseCase;
   late final RegisterDeviceUseCase registerDeviceUseCase;
 
@@ -106,6 +108,7 @@ class InjectionContainer {
     getUserOrdersUseCase = GetUserOrdersUseCase(ordersRepository);
     returnOrderUseCase = ReturnOrderUseCase(ordersRepository);
     
+    getMyQRUseCase = GetMyQRUseCase(qrRepository);
     refreshQRUseCase = RefreshQRUseCase(qrRepository);
     registerDeviceUseCase = RegisterDeviceUseCase(notificationRepository);
   }

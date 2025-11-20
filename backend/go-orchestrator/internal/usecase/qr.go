@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -76,12 +77,7 @@ func (uc *QRUseCase) ValidateQR(ctx context.Context, qrDataJSON string) (*entity
 		return nil, fmt.Errorf("qr usecase - ValidateQR - userRepo.GetByID: %w", err)
 	}
 
-	userEmail := ""
-	if user.Email != nil {
-		userEmail = *user.Email
-	}
-
-	if userEmail != qrData.Email {
+	if user.GetEmail() != qrData.Email {
 		return nil, fmt.Errorf("qr usecase - ValidateQR - user email mismatch")
 	}
 
@@ -94,12 +90,7 @@ func (uc *QRUseCase) RefreshQR(ctx context.Context, userID uuid.UUID) (*QRInfo, 
 		return nil, "", fmt.Errorf("qr usecase - RefreshQR - userRepo.GetByID: %w", err)
 	}
 
-	userEmail := ""
-	if user.Email != nil {
-		userEmail = *user.Email
-	}
-
-	qrInfo, qrImageBase64, err := uc.GenerateQR(ctx, user.ID, userEmail, user.FullName)
+	qrInfo, qrImageBase64, err := uc.GenerateQR(ctx, user.ID, user.GetEmail(), user.FullName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -122,4 +113,49 @@ func (uc *QRUseCase) GetUserFromQR(ctx context.Context, qrDataJSON string) (*ent
 	}
 
 	return user, nil
+}
+
+func (uc *QRUseCase) GetOrRefreshQR(ctx context.Context, userID uuid.UUID) (*QRInfo, string, error) {
+	user, err := uc.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, "", fmt.Errorf("qr usecase - GetOrRefreshQR - userRepo.GetByID: %w", err)
+	}
+
+	needsRefresh := user.QRExpiresAt == nil || time.Now().After(*user.QRExpiresAt)
+	if needsRefresh {
+		return uc.RefreshQR(ctx, userID)
+	}
+
+	qrCodeBase64, err := uc.getQRFromStorage(ctx, userID)
+	if err != nil {
+		return uc.RefreshQR(ctx, userID)
+	}
+
+	qrInfo := &QRInfo{
+		UserID:    user.ID,
+		Email:     user.GetEmail(),
+		Name:      user.FullName,
+		IssuedAt:  user.QRIssuedAt.Unix(),
+		ExpiresAt: user.QRExpiresAt.Unix(),
+	}
+
+	return qrInfo, qrCodeBase64, nil
+}
+
+func (uc *QRUseCase) getQRFromStorage(ctx context.Context, userID uuid.UUID) (string, error) {
+	objectName := fmt.Sprintf("%s.png", userID.String())
+
+	reader, err := uc.minioClient.GetFile(ctx, objectName)
+	if err != nil {
+		return "", fmt.Errorf("qr usecase - getQRFromStorage - minioClient.GetFile: %w", err)
+	}
+	defer reader.Close()
+
+	imageData, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("qr usecase - getQRFromStorage - io.ReadAll: %w", err)
+	}
+
+	qrCodeBase64 := base64.StdEncoding.EncodeToString(imageData)
+	return qrCodeBase64, nil
 }

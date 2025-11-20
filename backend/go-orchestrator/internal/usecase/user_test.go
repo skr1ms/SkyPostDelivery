@@ -19,9 +19,10 @@ func TestUserUseCase_VerifyPhoneCode_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -57,9 +58,10 @@ func TestUserUseCase_VerifyPhoneCode_InvalidCode(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -84,9 +86,10 @@ func TestUserUseCase_VerifyPhoneCode_ExpiredCode(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -111,9 +114,10 @@ func TestUserUseCase_LoginByPhone_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -139,9 +143,10 @@ func TestUserUseCase_LoginByPhone_NotVerified(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -161,9 +166,10 @@ func TestUserUseCase_LoginByCredentials_ByEmail_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "test@example.com"
@@ -195,9 +201,10 @@ func TestUserUseCase_LoginByCredentials_InvalidPassword(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "test@example.com"
@@ -224,9 +231,10 @@ func TestUserUseCase_LoginByCredentials_PhoneNotVerified(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "test@example.com"
@@ -264,9 +272,10 @@ func TestUserUseCase_LoginByCredentials_UserNotFound(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	login := "nonexistent@example.com"
@@ -285,9 +294,10 @@ func TestUserUseCase_RequestPasswordReset_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -313,9 +323,10 @@ func TestUserUseCase_RequestPasswordReset_UserNotFound(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -332,9 +343,10 @@ func TestUserUseCase_ResetPassword_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -361,9 +373,10 @@ func TestUserUseCase_ResetPassword_InvalidCode(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	phone := "79991234567"
@@ -386,9 +399,10 @@ func TestUserUseCase_GetUser_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -412,9 +426,10 @@ func TestUserUseCase_GetUserByEmail_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "test@example.com"
@@ -438,9 +453,10 @@ func TestUserUseCase_GenerateCode(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	code := uc.generateCode()
 
@@ -452,9 +468,10 @@ func TestUserUseCase_GetUserByID_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -488,9 +505,10 @@ func TestUserUseCase_GetUserByID_InvalidUUID(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	invalidUUID := "not-a-valid-uuid"
@@ -507,9 +525,10 @@ func TestUserUseCase_GetUserByID_NotFound(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -529,9 +548,10 @@ func TestUserUseCase_Register_Success(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	fullName := "Test User"
@@ -565,9 +585,10 @@ func TestUserUseCase_Register_EmailExists(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "existing@example.com"
@@ -591,9 +612,10 @@ func TestUserUseCase_Register_PhoneExists(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepo)
 	mockSMSWebAPI := new(mocks.MockSMSAeroWebAPI)
 	mockQRWebAPI := new(mocks.MockQRWebAPI)
+	mockValidator := new(mocks.MockValidator)
 	jwtService := jwt.NewJWTService("test", "test", time.Hour, time.Hour)
 
-	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService)
+	uc := NewUserUseCase(mockUserRepo, mockSMSWebAPI, mockQRWebAPI, jwtService, mockValidator)
 
 	ctx := context.Background()
 	email := "test@example.com"

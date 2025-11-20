@@ -161,6 +161,74 @@ func (_c *MockMinioClient_EnsureBucket_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
+// GetFile provides a mock function for the type MockMinioClient
+func (_mock *MockMinioClient) GetFile(ctx context.Context, objectName string) (io.ReadCloser, error) {
+	ret := _mock.Called(ctx, objectName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFile")
+	}
+
+	var r0 io.ReadCloser
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (io.ReadCloser, error)); ok {
+		return returnFunc(ctx, objectName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) io.ReadCloser); ok {
+		r0 = returnFunc(ctx, objectName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, objectName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMinioClient_GetFile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFile'
+type MockMinioClient_GetFile_Call struct {
+	*mock.Call
+}
+
+// GetFile is a helper method to define mock.On call
+//   - ctx context.Context
+//   - objectName string
+func (_e *MockMinioClient_Expecter) GetFile(ctx interface{}, objectName interface{}) *MockMinioClient_GetFile_Call {
+	return &MockMinioClient_GetFile_Call{Call: _e.mock.On("GetFile", ctx, objectName)}
+}
+
+func (_c *MockMinioClient_GetFile_Call) Run(run func(ctx context.Context, objectName string)) *MockMinioClient_GetFile_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMinioClient_GetFile_Call) Return(readCloser io.ReadCloser, err error) *MockMinioClient_GetFile_Call {
+	_c.Call.Return(readCloser, err)
+	return _c
+}
+
+func (_c *MockMinioClient_GetFile_Call) RunAndReturn(run func(ctx context.Context, objectName string) (io.ReadCloser, error)) *MockMinioClient_GetFile_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetFileURL provides a mock function for the type MockMinioClient
 func (_mock *MockMinioClient) GetFileURL(objectName string) string {
 	ret := _mock.Called(objectName)

@@ -10,12 +10,16 @@ import '../../domain/usecases/verify_phone_usecase.dart';
 import '../../domain/usecases/get_me_usecase.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../../notifications/domain/usecases/register_device_usecase.dart';
+import '../../../qr/domain/usecases/get_my_qr_usecase.dart';
+import '../../../qr/domain/usecases/refresh_qr_usecase.dart';
 
 class AuthProvider with ChangeNotifier {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final VerifyPhoneUseCase verifyPhoneUseCase;
   final GetMeUseCase getMeUseCase;
+  final GetMyQRUseCase getMyQRUseCase;
+  final RefreshQRUseCase refreshQRUseCase;
   final AuthLocalDataSource localDataSource;
   final HttpClient httpClient;
   final ConnectivityService connectivityService;
@@ -24,6 +28,7 @@ class AuthProvider with ChangeNotifier {
 
   UserEntity? _user;
   String? _qrCode;
+  int? _qrExpiresAt;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   bool _isOfflineMode = false;
@@ -34,6 +39,8 @@ class AuthProvider with ChangeNotifier {
     required this.registerUseCase,
     required this.verifyPhoneUseCase,
     required this.getMeUseCase,
+    required this.getMyQRUseCase,
+    required this.refreshQRUseCase,
     required this.localDataSource,
     required this.httpClient,
     required this.connectivityService,
@@ -254,6 +261,99 @@ class AuthProvider with ChangeNotifier {
       await localDataSource.saveUser(_user!);
       await localDataSource.saveQRExpiresAt(expiresAt);
     }
+    notifyListeners();
+  }
+
+  Future<void> loadMyQR() async {
+    try {
+      final result = await getMyQRUseCase.call();
+      _qrCode = result.qrCode;
+      _qrExpiresAt = result.expiresAt;
+
+      if (_user != null) {
+        _user = UserEntity(
+          id: _user!.id,
+          fullName: _user!.fullName,
+          email: _user!.email,
+          phoneNumber: _user!.phoneNumber,
+          phoneVerified: _user!.phoneVerified,
+          role: _user!.role,
+          createdAt: _user!.createdAt,
+          qrIssuedAt: DateTime.fromMillisecondsSinceEpoch(
+            result.issuedAt * 1000,
+          ),
+          qrExpiresAt: DateTime.fromMillisecondsSinceEpoch(
+            result.expiresAt * 1000,
+          ),
+        );
+        await localDataSource.saveUser(_user!);
+      }
+
+      await _saveQRToLocalStorage();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load QR: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> refreshQR() async {
+    try {
+      final result = await refreshQRUseCase.call();
+      _qrCode = result.qrCode;
+      _qrExpiresAt = result.expiresAt;
+
+      if (_user != null) {
+        _user = UserEntity(
+          id: _user!.id,
+          fullName: _user!.fullName,
+          email: _user!.email,
+          phoneNumber: _user!.phoneNumber,
+          phoneVerified: _user!.phoneVerified,
+          role: _user!.role,
+          createdAt: _user!.createdAt,
+          qrIssuedAt: DateTime.fromMillisecondsSinceEpoch(
+            result.issuedAt * 1000,
+          ),
+          qrExpiresAt: DateTime.fromMillisecondsSinceEpoch(
+            result.expiresAt * 1000,
+          ),
+        );
+        await localDataSource.saveUser(_user!);
+      }
+
+      await _saveQRToLocalStorage();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to refresh QR: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _saveQRToLocalStorage() async {
+    if (_qrCode != null) {
+      await localDataSource.saveQRCode(_qrCode!);
+    }
+    if (_qrExpiresAt != null && _user != null) {
+      await localDataSource.saveUser(_user!);
+    }
+  }
+
+  Future<void> loadQRFromLocalStorage() async {
+    final storedQrCode = await localDataSource.getQRCode();
+    final storedUser = await localDataSource.getUser();
+
+    if (storedQrCode != null) {
+      _qrCode = storedQrCode;
+    }
+
+    if (storedUser != null) {
+      _user = storedUser;
+      if (storedUser.qrExpiresAt != null) {
+        _qrExpiresAt = storedUser.qrExpiresAt!.millisecondsSinceEpoch ~/ 1000;
+      }
+    }
+
     notifyListeners();
   }
 

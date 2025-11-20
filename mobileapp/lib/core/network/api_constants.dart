@@ -17,6 +17,7 @@ class ApiConstants {
   static String returnOrder(String orderId) => '/orders/$orderId/return';
   static String userDevices(String userId) => '/users/$userId/devices';
   
+  static const String qrMe = '/qr/me';
   static const String qrRefresh = '/qr/refresh';
 }
 

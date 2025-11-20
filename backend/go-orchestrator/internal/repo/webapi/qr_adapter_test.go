@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestQRAdapter_GenerateQR_Success(t *testing.T) {
-	qrGen := qr.NewQRGenerator("test-secret-key")
+	qrGen := qr.NewQRGenerator(&config.QR{HMACSecret: "test-secret-key"})
 	adapter := NewQRAdapter(qrGen)
 
 	ctx := context.Background()
@@ -25,7 +26,7 @@ func TestQRAdapter_GenerateQR_Success(t *testing.T) {
 }
 
 func TestQRAdapter_GenerateQR_ValidatesOutput(t *testing.T) {
-	qrGen := qr.NewQRGenerator("test-secret-key")
+	qrGen := qr.NewQRGenerator(&config.QR{HMACSecret: "test-secret-key"})
 	adapter := NewQRAdapter(qrGen)
 
 	ctx := context.Background()
@@ -41,7 +42,7 @@ func TestQRAdapter_GenerateQR_ValidatesOutput(t *testing.T) {
 }
 
 func TestNewQRAdapter(t *testing.T) {
-	qrGen := qr.NewQRGenerator("test-secret")
+	qrGen := qr.NewQRGenerator(&config.QR{HMACSecret: "test-secret"})
 	adapter := NewQRAdapter(qrGen)
 
 	assert.NotNil(t, adapter)

@@ -11,7 +11,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/gin-gonic/gin/binding"
+	playgroundvalidator "github.com/go-playground/validator/v10"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/config"
 	grpcmiddleware "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/grpc/middleware"
 	grpcserver "github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/controller/grpc/server"
@@ -27,36 +28,40 @@ import (
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/postgres"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr"
 	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/redis"
+	"github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/validator"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 	"google.golang.org/grpc"
 )
 
 func Run(cfg *config.Config) {
-	logger := logger.New(cfg.LogLevel)
+	logger := logger.New(cfg.App.LogLevel)
 
-	pg, err := postgres.New(cfg.PG.URL)
+	pg, err := postgres.New(&cfg.PG)
 	if err != nil {
 		logger.Error("app - Run - postgres.New", err)
 	}
 	defer pg.Close()
 
+	rdb := redis.New(&cfg.Redis)
+	defer rdb.Close()
+
+	limiter := middleware.NewLimiter(rdb)
+
+	prometheusMiddleware := ginprometheus.NewPrometheus("go-orchestrator")
+
 	if err := runMigrations(pg); err != nil {
 		logger.Error("app - Run - runMigrations", err)
 	}
 
-	qrGenerator := qr.NewQRGenerator(cfg.QR.HMACSecret)
+	qrGenerator := qr.NewQRGenerator(&cfg.QR)
 
 	if err := ensureAdminExists(pg, cfg, qrGenerator); err != nil {
 		logger.Error("app - Run - ensureAdminExists", err)
 	}
 
 	minioClient, err := minio.New(
-		cfg.MinIO.Endpoint,
-		cfg.MinIO.AccessKey,
-		cfg.MinIO.SecretKey,
-		cfg.MinIO.PublicURL,
-		cfg.MinIO.UseSSL,
-		cfg.MinIO.BucketQR,
-		cfg.MinIO.BucketRecords,
+		&cfg.MinIO,
 	)
 	if err != nil {
 		logger.Error("app - Run - minio.New", err)
@@ -85,7 +90,7 @@ func Run(cfg *config.Config) {
 
 	smsWebAPI := webapi.NewSMSAeroAPI(cfg.SMSAero.Email, cfg.SMSAero.APIKey, cfg.SMSAero.BaseURL)
 
-	rabbitmqClient, err := rabbitmq.NewClient(cfg.RabbitMQ.URL)
+	rabbitmqClient, err := rabbitmq.NewClient(&cfg.RabbitMQ)
 	if err != nil {
 		logger.Error("app - Run - rabbitmq.NewClient", err)
 	}
@@ -95,7 +100,7 @@ func Run(cfg *config.Config) {
 
 	var pushSender webapi.PushSender
 	if cfg.Firebase.CredentialsFile != "" {
-		pushSender, err = webapi.NewFCMSender(ctx, cfg.Firebase.CredentialsFile)
+		pushSender, err = webapi.NewFCMSender(ctx, cfg.Firebase.CredentialsFile, cfg.Firebase.ProjectID)
 		if err != nil {
 			logger.Error("app - Run - FCMSender.New", err)
 			pushSender = webapi.NewNoopSender()
@@ -105,7 +110,7 @@ func Run(cfg *config.Config) {
 	}
 
 	notificationUC := usecase.NewNotificationUseCase(deviceRepo, pushSender)
-	userUC := usecase.NewUserUseCase(userRepo, smsWebAPI, qrAdapter, jwtService)
+	userUC := usecase.NewUserUseCase(userRepo, smsWebAPI, qrAdapter, jwtService, validator.New())
 	goodUC := usecase.NewGoodUseCase(goodRepo)
 	orderUC := usecase.NewOrderUseCase(orderRepo, goodRepo, droneRepo, deliveryRepo, parcelAutomatRepo, lockerRepo, internalLockerRepo, rabbitmqClient)
 	droneUC := usecase.NewDroneUseCase(droneRepo)
@@ -121,9 +126,15 @@ func Run(cfg *config.Config) {
 	gin.SetMode(cfg.GinMode)
 	router := gin.New()
 
+	if v, ok := binding.Validator.Engine().(*playgroundvalidator.Validate); ok {
+		v.RegisterValidation("russian_phone", validator.ValidateRussianPhoneField)
+		v.RegisterValidation("strong_password", validator.ValidateStrongPasswordField)
+		v.RegisterValidation("custom_email", validator.ValidateEmailField)
+	}
+
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger(logger))
-	router.Use(middleware.PrometheusMiddleware())
+	prometheusMiddleware.Use(router)
 
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtService)
 
@@ -152,9 +163,7 @@ func Run(cfg *config.Config) {
 	}
 	router.Use(cors.New(corsConfig))
 
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
-	v1.NewRouter(router, userUC, goodUC, orderUC, droneUC, deliveryUC, lockerUC, parcelAutomatUC, qrUC, notificationUC, jwtMiddleware)
+	v1.NewRouter(router, userUC, goodUC, orderUC, droneUC, deliveryUC, lockerUC, parcelAutomatUC, qrUC, notificationUC, jwtMiddleware, limiter)
 
 	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPC.Port))
 	if err != nil {

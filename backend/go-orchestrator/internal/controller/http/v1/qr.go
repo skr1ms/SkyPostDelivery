@@ -29,6 +29,7 @@ func newQRRoutes(g *gin.RouterGroup, uc *usecase.QRUseCase, jwtMiddleware *middl
 		protected := group.Group("")
 		protected.Use(jwtMiddleware.RequireAuth())
 		{
+			protected.GET("/me", r.getMyQR)
 			protected.POST("/refresh", r.refresh)
 		}
 	}
@@ -57,22 +58,13 @@ func (qr *qrRoutes) validate(c *gin.Context) {
 		return
 	}
 
-	expiresAt := int64(0)
-	if user.QRExpiresAt != nil {
-		expiresAt = user.QRExpiresAt.Unix()
-	}
-
-	userEmail := ""
-	if user.Email != nil {
-		userEmail = *user.Email
-	}
-
 	c.JSON(http.StatusOK, response.ValidateResponse{
-		Valid:     true,
-		UserID:    user.ID.String(),
-		Email:     userEmail,
-		FullName:  user.FullName,
-		ExpiresAt: expiresAt,
+		Valid:            true,
+		UserID:           user.ID.String(),
+		Email:            user.GetEmail(),
+		FullName:         user.FullName,
+		AccessExpiresAt:  user.QRIssuedAt.Unix(),
+		RefreshExpiresAt: user.QRExpiresAt.Unix(),
 	})
 }
 
@@ -106,7 +98,35 @@ func (qr *qrRoutes) refresh(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response.RefreshResponse{
+		QRCode:           qrCodeBase64,
+		IssuedAt:         qrInfo.IssuedAt,
+		AccessExpiresAt:  qrInfo.IssuedAt,
+		RefreshExpiresAt: qrInfo.ExpiresAt,
+	})
+}
+
+// @Summary      Получить мой QR-код
+// @Description  Возвращает текущий QR-код пользователя, автоматически обновляет если истёк
+// @Tags         qr
+// @Produce      json
+// @Security     Bearer
+// @Success      200 {object} response.QRResponse
+// @Failure      401 {object} response.Error
+// @Failure      500 {object} response.Error
+// @Router       /qr/me [get]
+func (qr *qrRoutes) getMyQR(c *gin.Context) {
+	userID := middleware.MustGetUserID(c)
+
+	// Получить QR (с автообновлением если истёк)
+	qrInfo, qrCodeBase64, err := qr.uc.GetOrRefreshQR(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.QRResponse{
 		QRCode:    qrCodeBase64,
+		IssuedAt:  qrInfo.IssuedAt,
 		ExpiresAt: qrInfo.ExpiresAt,
 	})
 }

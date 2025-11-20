@@ -19,12 +19,20 @@ type PushSender interface {
 	SendDeliveryNotification(ctx context.Context, tokens []string, orderID string, lockerCellID *string) ([]string, error)
 }
 
-func NewFCMSender(ctx context.Context, credentialsFile string) (*fcmSender, error) {
+func NewFCMSender(ctx context.Context, credentialsFile, projectID string) (*fcmSender, error) {
 	opts := []option.ClientOption{}
 	if credentialsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(credentialsFile))
 	}
-	app, err := firebase.NewApp(ctx, nil, opts...)
+
+	var config *firebase.Config
+	if projectID != "" {
+		config = &firebase.Config{
+			ProjectID: projectID,
+		}
+	}
+
+	app, err := firebase.NewApp(ctx, config, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("push - NewFCMSender - firebase.NewApp: %w", err)
 	}

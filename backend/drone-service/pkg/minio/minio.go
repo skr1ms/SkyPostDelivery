@@ -16,7 +16,7 @@ type Client struct {
 	bucketName string
 }
 
-func New(cfg config.MinIO) (*Client, error) {
+func New(cfg *config.MinIO) (*Client, error) {
 	minioClient, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.RootUser, cfg.RootPassword, ""),
 		Secure: cfg.UseSSL,
