@@ -1,1 +1,0 @@
-## ILL REWRITE the parcel-automat from Python to Go soon
