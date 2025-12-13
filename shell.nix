@@ -8,6 +8,7 @@
 
 pkgs.mkShell {
   packages = with pkgs; [
+    bash
     go
     gopls
     gotools
@@ -19,10 +20,14 @@ pkgs.mkShell {
     python311
     python311Packages.pip
     python311Packages.virtualenv
-    opencv
-    pkg-config
-    gcc
-    gnumake
+    python311Packages.websockets
+    python311Packages.pydantic
+    python311Packages.python-dotenv
+    python311Packages.numpy
+    python311Packages.pytest
+    python311Packages.pytest-asyncio
+    python311Packages.pytest-cov
+    make
     git
     docker
     docker-compose

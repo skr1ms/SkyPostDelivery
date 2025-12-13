@@ -1,1 +1,0 @@
-## ILL REWRITE the drone from Python to Go soon
