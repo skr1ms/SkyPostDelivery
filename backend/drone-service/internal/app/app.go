@@ -40,7 +40,11 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		logger.Error("app - Run - rabbitmq.NewClient", err)
 	}
-	defer rabbitmqClient.Close()
+	defer func() {
+		if err := rabbitmqClient.Close(); err != nil {
+			logger.Error("failed to close rabbitmq client", err)
+		}
+	}()
 
 	minioClient, err := minio.New(&cfg.MinIO)
 	if err != nil {
@@ -100,7 +104,7 @@ func Run(cfg *config.Config) {
 
 	droneWSHandler = websocket.NewDroneWebSocketHandler(droneMessageUseCase)
 
-	adminWSHandler := websocket.NewAdminWebSocketHandler(droneManager, droneRepo, cfg.WebSocket.BroadcastInterval)
+	adminWSHandler := websocket.NewAdminWebSocketHandler(droneManager, droneRepo, cfg.BroadcastInterval)
 
 	deliveryWorker := rabbitmq.NewDeliveryWorker(rabbitmqClient, deliveryUseCase)
 	if err := deliveryWorker.Start(ctx); err != nil {
@@ -119,14 +123,14 @@ func Run(cfg *config.Config) {
 	v1.NewRouter(router, droneWSHandler, adminWSHandler, videoHandler, droneManager)
 
 	httpServer := &http.Server{
-		Addr:         fmt.Sprintf(":%s", cfg.HTTP.Port),
+		Addr:         fmt.Sprintf(":%s", cfg.Port),
 		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {
-		logger.Info(fmt.Sprintf("HTTP server started on port %s", cfg.HTTP.Port), nil)
+		logger.Info(fmt.Sprintf("HTTP server started on port %s", cfg.Port), nil)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("app - Run - httpServer.ListenAndServe", err)
 		}

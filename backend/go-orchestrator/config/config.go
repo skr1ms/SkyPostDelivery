@@ -109,7 +109,7 @@ type (
 )
 
 func New() (*Config, error) {
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	cfg := &Config{
 		App: App{

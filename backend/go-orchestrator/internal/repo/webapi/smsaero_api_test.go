@@ -39,7 +39,7 @@ func TestSMSAeroAPI_SendSMS_Success(t *testing.T) {
 		assert.Equal(t, "Ваш код для входа в SkyPost Delivery: Test message", r.FormValue("text"))
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": true, "message": "SMS sent"}`))
+		_, _ = w.Write([]byte(`{"success": true, "message": "SMS sent"}`))
 	}))
 	defer server.Close()
 
@@ -56,7 +56,7 @@ func TestSMSAeroAPI_SendSMS_Success(t *testing.T) {
 func TestSMSAeroAPI_SendSMS_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": false, "message": "Insufficient balance"}`))
+		_, _ = w.Write([]byte(`{"success": false, "message": "Insufficient balance"}`))
 	}))
 	defer server.Close()
 
@@ -74,7 +74,7 @@ func TestSMSAeroAPI_SendSMS_APIError(t *testing.T) {
 func TestSMSAeroAPI_SendSMS_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 	}))
 	defer server.Close()
 
@@ -92,7 +92,7 @@ func TestSMSAeroAPI_SendSMS_HTTPError(t *testing.T) {
 func TestSMSAeroAPI_SendSMS_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`invalid json`))
+		_, _ = w.Write([]byte(`invalid json`))
 	}))
 	defer server.Close()
 
@@ -118,7 +118,7 @@ func TestSMSAeroAPI_CheckBalance_Success(t *testing.T) {
 		assert.Equal(t, "test-api-key", password)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": true, "data": {"balance": 100.50}}`))
+		_, _ = w.Write([]byte(`{"success": true, "data": {"balance": 100.50}}`))
 	}))
 	defer server.Close()
 
@@ -154,7 +154,7 @@ func TestSMSAeroAPI_CheckBalance_HTTPError(t *testing.T) {
 func TestSMSAeroAPI_CheckBalance_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{invalid}`))
+		_, _ = w.Write([]byte(`{invalid}`))
 	}))
 	defer server.Close()
 

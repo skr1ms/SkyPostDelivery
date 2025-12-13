@@ -8,13 +8,39 @@
 
 pkgs.mkShell {
   packages = with pkgs; [
+    go
+    gopls
+    gotools
+    go-tools
+    nodejs
+    nodePackages.npm
+    nodePackages.typescript
+    nodePackages.typescript-language-server
+    python311
+    python311Packages.pip
+    python311Packages.virtualenv
+    opencv
+    pkg-config
+    gcc
+    gnumake
+    git
+    docker
+    docker-compose
+    postgresql_15
+    protobuf
+    grpcurl
+    sqlc
+    expat
+    util-linux
+    libbsd
+    fontconfig
+    freetype
     flutter
     android-studio-full
-    android-tools  # adb, fastboot
+    android-tools
     clang
     cmake
     ninja
-    pkg-config
     gtk3
     pcre
     libepoxy
@@ -35,6 +61,10 @@ pkgs.mkShell {
   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
     pkgs.fontconfig.lib
     pkgs.sqlite.out
+    pkgs.opencv4
+    pkgs.expat
+    pkgs.util-linux
+    pkgs.libbsd
   ];
 
   shellHook = ''
@@ -47,8 +77,18 @@ pkgs.mkShell {
     export QT_SCALE_FACTOR=none
     export LD_LIBRARY_PATH="$ANDROID_HOME/emulator/lib64/qt/lib:$ANDROID_HOME/emulator/lib64/vulkan:$ANDROID_HOME/emulator/lib64/gles_swiftshader:$ANDROID_HOME/emulator/lib64:$LD_LIBRARY_PATH"
 
-    echo "Flutter Android dev-shell активен"
-    echo "ANDROID_HOME=$ANDROID_HOME"
+    export PKG_CONFIG_PATH="${pkgs.opencv4}/lib/pkgconfig:$PKG_CONFIG_PATH"
+    export CGO_CFLAGS="-I${pkgs.opencv4}/include/opencv4"
+    export CGO_LDFLAGS="-L${pkgs.opencv4}/lib -L${pkgs.expat}/lib -L${pkgs.util-linux.lib}/lib -L${pkgs.libbsd}/lib"
+
+    echo "=== SkyPostDelivery Dev Shell ==="
+    echo "Go: $(go version | cut -d' ' -f3)"
+    echo "Node: $(node --version)"
+    echo "Python: $(python3 --version | cut -d' ' -f2)"
+    echo "OpenCV: ${pkgs.opencv4.version}"
+    echo "Flutter: $(flutter --version 2>&1 | head -1)"
+    echo "ANDROID_HOME: $ANDROID_HOME"
+    echo "=================================="
   '';
 }
 

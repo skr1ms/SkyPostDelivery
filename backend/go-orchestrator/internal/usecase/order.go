@@ -71,7 +71,7 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 	}
 
 	if _, err := uc.goodRepo.UpdateQuantity(ctx, goodID, -1); err != nil {
-		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
+		_ = uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
 		return nil, fmt.Errorf("order usecase - CreateOrder - goodRepo.UpdateQuantity: %w", err)
 	}
 
@@ -118,10 +118,10 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 
 	order, err := uc.orderRepo.CreateWithCell(ctx, userID, goodID, parcelAutomat.ID, &cell.ID, "pending")
 	if err != nil {
-		uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
-		uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
+		_, _ = uc.goodRepo.UpdateQuantity(ctx, goodID, 1)
+		_ = uc.lockerRepo.UpdateCellStatus(ctx, cell.ID, "available")
 		if uc.internalLockerRepo != nil && internalCellID != nil {
-			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+			_ = uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
 		}
 		return nil, fmt.Errorf("order usecase - CreateOrder - orderRepo.CreateWithCell: %w", err)
 	}
@@ -148,9 +148,9 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 	delivery, err := uc.deliveryRepo.Create(ctx, order.ID, &drone.ID, parcelAutomat.ID, internalCellID, "pending")
 	if err != nil {
 		log.Printf("[ORDER] Failed to create delivery for order %s with drone %s: %v", order.ID, drone.ID, err)
-		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
+		_ = uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
 		if internalCellReserved && uc.internalLockerRepo != nil && internalCellID != nil {
-			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+			_ = uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
 		}
 		return order, nil
 	}
@@ -183,10 +183,10 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, userID, goodID uuid.UUI
 
 	if err := uc.rabbitmqClient.Publish(ctx, queueName, deliveryTask); err != nil {
 		log.Printf("[ORDER] Publish failed for order %s: %v", order.ID, err)
-		uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
-		uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "failed")
+		_ = uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
+		_, _ = uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "failed")
 		if internalCellReserved && uc.internalLockerRepo != nil && internalCellID != nil {
-			uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
+			_ = uc.internalLockerRepo.UpdateCellStatus(ctx, *internalCellID, "available")
 		}
 		return order, nil
 	}

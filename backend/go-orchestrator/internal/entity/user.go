@@ -29,15 +29,15 @@ func (u *User) GetEmail() string {
 }
 
 func (u *User) IsCodeValid(code string) bool {
-    if u.VerificationCode == nil {
-        return false
-    }
-    return *u.VerificationCode == code
+	if u.VerificationCode == nil {
+		return false
+	}
+	return *u.VerificationCode == code
 }
 
 func (u *User) IsCodeExpired() bool {
-    if u.CodeExpiresAt == nil {
-        return true
-    }
-    return time.Now().After(*u.CodeExpiresAt)
+	if u.CodeExpiresAt == nil {
+		return true
+	}
+	return time.Now().After(*u.CodeExpiresAt)
 }

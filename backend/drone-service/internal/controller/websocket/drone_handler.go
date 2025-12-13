@@ -53,7 +53,9 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 		log.Printf("Failed to upgrade connection: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	ctx := c.Request.Context()
 
@@ -70,7 +72,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 	}
 
 	if regData["type"] != "register" {
-		conn.WriteJSON(map[string]string{
+		_ = conn.WriteJSON(map[string]string{
 			"type":    "error",
 			"message": "First message must be registration with ip_address",
 		})
@@ -79,7 +81,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 
 	ipAddress, ok := regData["ip_address"].(string)
 	if !ok || ipAddress == "" {
-		conn.WriteJSON(map[string]string{
+		_ = conn.WriteJSON(map[string]string{
 			"type":    "error",
 			"message": "ip_address is required for registration",
 		})
@@ -88,7 +90,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 
 	droneID, err := h.droneMessageUseCase.RegisterDrone(ctx, ipAddress)
 	if err != nil {
-		conn.WriteJSON(map[string]string{
+		_ = conn.WriteJSON(map[string]string{
 			"type":    "error",
 			"message": err.Error(),
 		})
@@ -100,7 +102,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 	h.ipToID[ipAddress] = droneID
 	h.mu.Unlock()
 
-	conn.WriteJSON(map[string]interface{}{
+	_ = conn.WriteJSON(map[string]interface{}{
 		"type":      "registered",
 		"drone_id":  droneID,
 		"timestamp": time.Now().Format(time.RFC3339),
@@ -116,7 +118,7 @@ func (h *DroneWebSocketHandler) HandleDroneConnection(c *gin.Context) {
 			}
 		}
 		h.mu.Unlock()
-		h.droneMessageUseCase.UnregisterDrone(ctx, droneID)
+		_ = h.droneMessageUseCase.UnregisterDrone(ctx, droneID)
 	}()
 
 	for {

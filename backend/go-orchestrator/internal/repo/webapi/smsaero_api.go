@@ -52,7 +52,9 @@ func (s *SMSAeroAPI) SendSMS(ctx context.Context, phone, code string) error {
 	if err != nil {
 		return fmt.Errorf("SMSAeroAPI - SendSMS - Do: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -89,7 +91,9 @@ func (s *SMSAeroAPI) CheckBalance(ctx context.Context) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("SMSAeroAPI - CheckBalance - Do: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

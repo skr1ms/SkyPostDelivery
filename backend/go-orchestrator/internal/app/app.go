@@ -35,7 +35,7 @@ import (
 )
 
 func Run(cfg *config.Config) {
-	logger := logger.New(cfg.App.LogLevel)
+	logger := logger.New(cfg.LogLevel)
 
 	pg, err := postgres.New(&cfg.PG)
 	if err != nil {
@@ -44,7 +44,11 @@ func Run(cfg *config.Config) {
 	defer pg.Close()
 
 	rdb := redis.New(&cfg.Redis)
-	defer rdb.Close()
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			logger.Error("failed to close redis client", err)
+		}
+	}()
 
 	limiter := middleware.NewLimiter(rdb)
 
@@ -68,10 +72,10 @@ func Run(cfg *config.Config) {
 	}
 
 	jwtService := jwt.NewJWTService(
-		cfg.JWT.AccessSecret,
-		cfg.JWT.RefreshSecret,
-		cfg.JWT.AccessTTL,
-		cfg.JWT.RefreshTTL,
+		cfg.AccessSecret,
+		cfg.RefreshSecret,
+		cfg.AccessTTL,
+		cfg.RefreshTTL,
 	)
 
 	userRepo := repo.NewUserRepo(pg)
@@ -88,19 +92,23 @@ func Run(cfg *config.Config) {
 	qrUC := usecase.NewQRUseCase(qrGenerator, userRepo, minioClient)
 	orangePIAdapter := webapi.NewOrangePIAdapter()
 
-	smsWebAPI := webapi.NewSMSAeroAPI(cfg.SMSAero.Email, cfg.SMSAero.APIKey, cfg.SMSAero.BaseURL)
+	smsWebAPI := webapi.NewSMSAeroAPI(cfg.SMSAero.Email, cfg.APIKey, cfg.BaseURL)
 
 	rabbitmqClient, err := rabbitmq.NewClient(&cfg.RabbitMQ)
 	if err != nil {
-		logger.Error("app - Run - rabbitmq.NewClient", err)
+		logger.Fatal("app - Run - rabbitmq.NewClient", err)
 	}
-	defer rabbitmqClient.Close()
+	defer func() {
+		if err := rabbitmqClient.Close(); err != nil {
+			logger.Error("failed to close rabbitmq client", err)
+		}
+	}()
 
 	ctx := context.Background()
 
 	var pushSender webapi.PushSender
-	if cfg.Firebase.CredentialsFile != "" {
-		pushSender, err = webapi.NewFCMSender(ctx, cfg.Firebase.CredentialsFile, cfg.Firebase.ProjectID)
+	if cfg.CredentialsFile != "" {
+		pushSender, err = webapi.NewFCMSender(ctx, cfg.CredentialsFile, cfg.ProjectID)
 		if err != nil {
 			logger.Error("app - Run - FCMSender.New", err)
 			pushSender = webapi.NewNoopSender()
@@ -127,9 +135,9 @@ func Run(cfg *config.Config) {
 	router := gin.New()
 
 	if v, ok := binding.Validator.Engine().(*playgroundvalidator.Validate); ok {
-		v.RegisterValidation("russian_phone", validator.ValidateRussianPhoneField)
-		v.RegisterValidation("strong_password", validator.ValidateStrongPasswordField)
-		v.RegisterValidation("custom_email", validator.ValidateEmailField)
+		_ = v.RegisterValidation("russian_phone", validator.ValidateRussianPhoneField)
+		_ = v.RegisterValidation("strong_password", validator.ValidateStrongPasswordField)
+		_ = v.RegisterValidation("custom_email", validator.ValidateEmailField)
 	}
 
 	router.Use(gin.Recovery())

@@ -1,0 +1,26 @@
+[Unit]
+Description=SkyPost Locker Agent Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/locker-agent
+ExecStart=/opt/locker-agent/locker-agent
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=locker-agent
+
+Environment="LOG_LEVEL=info"
+Environment="HTTP_PORT=8080"
+
+EnvironmentFile=-/opt/locker-agent/.env
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

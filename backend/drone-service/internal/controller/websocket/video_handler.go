@@ -56,7 +56,9 @@ func (h *VideoHandler) HandleAdminVideoConnection(c *gin.Context) {
 		log.Printf("Failed to upgrade connection: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	h.mu.Lock()
 	if h.adminVideoConnections[droneID] == nil {

@@ -68,7 +68,9 @@ func (a *OrangePIAdapter) SendCellUUIDs(ctx context.Context, ipAddress string, p
 	if err != nil {
 		return fmt.Errorf("failed to send request to OrangePI: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("OrangePI returned non-OK status: %d", resp.StatusCode)
@@ -108,7 +110,9 @@ func (a *OrangePIAdapter) OpenCell(ctx context.Context, ipAddress string, cellID
 	if err != nil {
 		return fmt.Errorf("failed to send request to OrangePI: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("OrangePI returned non-OK status: %d", resp.StatusCode)

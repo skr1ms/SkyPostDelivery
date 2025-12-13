@@ -23,9 +23,9 @@ type CustomValidator struct {
 func New() *CustomValidator {
 	v := validator.New()
 
-	v.RegisterValidation("russian_phone", validateRussianPhone)
-	v.RegisterValidation("strong_password", validateStrongPassword)
-	v.RegisterValidation("custom_email", validateEmail)
+	_ = v.RegisterValidation("russian_phone", validateRussianPhone)
+	_ = v.RegisterValidation("strong_password", validateStrongPassword)
+	_ = v.RegisterValidation("custom_email", validateEmail)
 
 	return &CustomValidator{validator: v}
 }

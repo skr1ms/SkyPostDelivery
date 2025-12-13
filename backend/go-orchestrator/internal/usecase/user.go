@@ -140,12 +140,12 @@ func (uc *UserUseCase) Register(ctx context.Context, fullName, email, phone, pas
 	if err != nil {
 		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)
 	}
-	
+
 	err = uc.validator.ValidateVar(email, "custom_email")
 	if err != nil {
 		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)
 	}
-	
+
 	err = uc.validator.ValidateVar(password, "strong_password")
 	if err != nil {
 		return nil, fmt.Errorf("UserUseCase - Register - ValidateVar: %w", err)

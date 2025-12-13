@@ -149,7 +149,9 @@ func (uc *QRUseCase) getQRFromStorage(ctx context.Context, userID uuid.UUID) (st
 	if err != nil {
 		return "", fmt.Errorf("qr usecase - getQRFromStorage - minioClient.GetFile: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	imageData, err := io.ReadAll(reader)
 	if err != nil {

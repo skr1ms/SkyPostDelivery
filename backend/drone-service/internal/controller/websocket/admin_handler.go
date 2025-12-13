@@ -59,7 +59,9 @@ func (h *AdminWebSocketHandler) HandleAdminConnection(c *gin.Context) {
 		log.Printf("Failed to upgrade admin connection: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	h.mu.Lock()
 	h.connectedAdmins[adminID] = conn

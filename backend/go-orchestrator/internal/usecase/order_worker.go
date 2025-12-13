@@ -53,7 +53,7 @@ func (uc *OrderUseCase) processPendingOrders(ctx context.Context) {
 		delivery.DroneID = &drone.ID
 		if err := uc.deliveryRepo.UpdateDrone(ctx, delivery.ID, drone.ID); err != nil {
 			log.Printf("Failed to assign drone to delivery %s: %v", delivery.ID, err)
-			uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
+			_ = uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
 			continue
 		}
 
@@ -103,8 +103,8 @@ func (uc *OrderUseCase) processPendingOrders(ctx context.Context) {
 
 		if err := uc.rabbitmqClient.Publish(ctx, queueName, deliveryTask); err != nil {
 			log.Printf("Failed to publish delivery task: %v", err)
-			uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
-			uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "awaiting_drone")
+			_ = uc.droneRepo.UpdateStatus(ctx, drone.ID, "idle")
+			_, _ = uc.deliveryRepo.UpdateStatus(ctx, delivery.ID, "awaiting_drone")
 			continue
 		}
 

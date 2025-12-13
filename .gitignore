@@ -36,6 +36,8 @@ bin/
 *.so
 *.dylib
 backend/go-orchestrator/bin/
+backend/agents/locker-agent/bin/
+backend/agents/drone-agent/bin/
 go.work
 go.work.sum
 __pycache__/

@@ -101,7 +101,7 @@ func (r *orderRoutes) createMultiple(c *gin.Context) {
 
 	orders, err := r.uc.CreateMultipleOrders(c.Request.Context(), userID, req.GoodIDs)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.JSON(http.StatusInternalServerError, response.Error{Error: err.Error()})
 		return
 	}

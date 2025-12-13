@@ -94,7 +94,7 @@ func (r *DroneRepo) GetDroneState(ctx context.Context, droneID string) (*entity.
 
 func float64ToNumeric(f float64) pgtype.Numeric {
 	n := pgtype.Numeric{}
-	n.Scan(fmt.Sprintf("%.2f", f))
+	_ = n.Scan(fmt.Sprintf("%.2f", f))
 	return n
 }
 

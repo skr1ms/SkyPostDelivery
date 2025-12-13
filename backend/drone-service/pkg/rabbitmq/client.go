@@ -57,7 +57,7 @@ func NewClient(cfg *config.RabbitMQ) (*Client, error) {
 	}
 
 	if err := client.init(conn); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, err
 	}
 
@@ -82,12 +82,12 @@ func (c *Client) init(conn *amqp.Connection) error {
 	}
 
 	if err := ch.Confirm(false); err != nil {
-		ch.Close()
+		_ = ch.Close()
 		return fmt.Errorf("failed to put channel into confirm mode: %w", err)
 	}
 
 	if err := c.declareQueues(ch); err != nil {
-		ch.Close()
+		_ = ch.Close()
 		return fmt.Errorf("failed to declare queues: %w", err)
 	}
 
@@ -154,7 +154,7 @@ func (c *Client) handleReconnect(url string) {
 
 			if err := c.init(conn); err != nil {
 				log.Printf("Failed to initialize after reconnect: %v", err)
-				conn.Close()
+				_ = conn.Close()
 				time.Sleep(5 * time.Second)
 				continue
 			}
@@ -198,9 +198,9 @@ func (c *Client) Consume(ctx context.Context, queue string, handler func(context
 		for d := range msgs {
 			if err := handler(ctx, d); err != nil {
 				log.Printf("Error handling message: %v", err)
-				d.Nack(false, true)
+				_ = d.Nack(false, true)
 			} else {
-				d.Ack(false)
+				_ = d.Ack(false)
 			}
 		}
 	}()
@@ -243,7 +243,7 @@ func (c *Client) Close() error {
 	defer c.mu.Unlock()
 
 	if c.channel != nil {
-		c.channel.Close()
+		_ = c.channel.Close()
 	}
 
 	if c.conn != nil {
