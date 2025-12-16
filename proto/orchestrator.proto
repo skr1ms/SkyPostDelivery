@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/skr1ms/hitech-ekb/pkg/pb";
+
+service OrchestratorService {
+  rpc RequestCellOpen(CellOpenRequest) returns (CellOpenResponse);
+}
+
+message CellOpenRequest {
+  string order_id = 1;
+  string parcel_automat_id = 2;
+}
+
+message CellOpenResponse {
+  bool success = 1;
+  string message = 2;
+  string cell_id = 3;
+  string internal_cell_id = 4;
+}
+

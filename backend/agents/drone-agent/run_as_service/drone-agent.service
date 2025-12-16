@@ -1,0 +1,39 @@
+[Unit]
+Description=SkyPost Drone Agent Service
+After=network.target roscore.service
+Wants=network-online.target
+Requires=roscore.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/drone-agent
+Environment="PYTHONPATH=/home/pi/drone-agent"
+Environment="ROS_MASTER_URI=http://localhost:11311"
+Environment="ROS_IP=192.168.11.1"
+
+# Source ROS environment
+ExecStartPre=/bin/bash -c 'source /opt/ros/noetic/setup.bash'
+ExecStartPre=/bin/bash -c 'if [ -f ~/catkin_ws/devel/setup.bash ]; then source ~/catkin_ws/devel/setup.bash; fi'
+
+# Start the drone agent
+ExecStart=/usr/bin/python3 /home/pi/drone-agent/app/main.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=200
+StartLimitBurst=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=drone-agent
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

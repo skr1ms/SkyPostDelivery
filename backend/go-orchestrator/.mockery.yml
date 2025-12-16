@@ -1,0 +1,54 @@
+all: false
+force-file-write: true
+formatter: goimports
+log-level: info
+template: testify
+
+packages:
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/internal/repo:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: '{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+  
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/rabbitmq:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'RabbitMQClient.go'
+      pkgname: 'mocks'
+      structname: 'MockRabbitMQClient'
+  
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/qr:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'QRGenerator.go'
+      pkgname: 'mocks'
+      structname: 'MockQRGenerator'
+  
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/minio:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'MinioClient.go'
+      pkgname: 'mocks'
+      structname: 'MockMinioClient'
+
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/validator:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'Validator.go'
+      pkgname: 'mocks'
+      structname: 'MockValidator'
+
+  github.com/skr1ms/SkyPostDelivery/go-orchestrator/pkg/logger:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'Logger.go'
+      pkgname: 'mocks'
+      structname: 'MockLogger'

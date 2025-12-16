@@ -1,0 +1,47 @@
+all: false
+force-file-write: true
+formatter: goimports
+log-level: info
+template: testify
+
+packages:
+  github.com/skr1ms/SkyPostDelivery/drone-service/internal/repo:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: '{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+  
+  github.com/skr1ms/SkyPostDelivery/drone-service/pkg/rabbitmq:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: '{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+
+  github.com/skr1ms/SkyPostDelivery/drone-service/pkg/grpc:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: '{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+
+  github.com/skr1ms/SkyPostDelivery/drone-service/internal/usecase:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: '{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+
+  github.com/skr1ms/SkyPostDelivery/drone-service/pkg/logger:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      filename: 'Logger.go'
+      pkgname: 'mocks'
+      structname: 'MockLogger'
+      

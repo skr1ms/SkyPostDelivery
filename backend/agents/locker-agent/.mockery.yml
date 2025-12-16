@@ -1,0 +1,30 @@
+all: false
+force-file-write: true
+formatter: goimports
+log-level: info
+template: testify
+
+packages:
+  github.com/skr1ms/SkyPostDelivery/locker-agent/internal/repo/inmemory:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+      filename: '{{.InterfaceName}}.go'
+  
+  github.com/skr1ms/SkyPostDelivery/locker-agent/internal/hardware:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+      filename: '{{.InterfaceName}}.go'
+
+  github.com/skr1ms/SkyPostDelivery/locker-agent/pkg/orchestrator:
+    config:
+      all: true
+      dir: 'internal/usecase/mocks'
+      pkgname: 'mocks'
+      structname: 'Mock{{.InterfaceName}}'
+      filename: '{{.InterfaceName}}.go'

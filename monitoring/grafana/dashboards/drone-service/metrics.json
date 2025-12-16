@@ -1,0 +1,188 @@
+{
+  "uid": "drone-service-metrics",
+  "title": "Drone Service - Metrics",
+  "tags": ["python", "drone-service", "metrics"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP Request Rate",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{service=\"drone-service\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{method}} {{endpoint}} - {{status}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "reqps"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "HTTP Request Duration (p95)",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service=\"drone-service\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{method}} {{endpoint}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "gRPC Request Rate",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(grpc_requests_total{service=\"drone-service\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{method}} - {{status}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "reqps"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Python Memory Usage",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{service=\"drone-service\"}",
+          "refId": "A",
+          "legendFormat": "Resident Memory"
+        },
+        {
+          "expr": "process_virtual_memory_bytes{service=\"drone-service\"}",
+          "refId": "B",
+          "legendFormat": "Virtual Memory"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "bytes"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    }
+  ]
+}

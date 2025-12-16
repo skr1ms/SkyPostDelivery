@@ -1,0 +1,239 @@
+basePath: /api/v1
+definitions:
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_request.SendCommand:
+    properties:
+      command:
+        example: start_delivery
+        type: string
+      payload:
+        additionalProperties: true
+        type: object
+    required:
+    - command
+    type: object
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.CommandResponse:
+    properties:
+      message:
+        example: Command successfully queued for delivery
+        type: string
+      status:
+        example: command_sent
+        type: string
+    type: object
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.DroneStatus:
+    properties:
+      battery_level:
+        example: 85.5
+        type: number
+      current_delivery_id:
+        example: delivery-123
+        type: string
+      drone_id:
+        example: drone-001
+        type: string
+      error_message:
+        example: ""
+        type: string
+      position:
+        $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Position'
+      speed:
+        example: 15.3
+        type: number
+      status:
+        example: idle
+        type: string
+    type: object
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Error:
+    properties:
+      error:
+        example: internal server error
+        type: string
+    type: object
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Health:
+    properties:
+      service:
+        example: drone-service
+        type: string
+      status:
+        example: healthy
+        type: string
+    type: object
+  github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Position:
+    properties:
+      altitude:
+        example: 150
+        type: number
+      latitude:
+        example: 55.751244
+        type: number
+      longitude:
+        example: 37.618423
+        type: number
+    type: object
+host: localhost:8001
+info:
+  contact:
+    email: skr1ms13666@gmail.com
+    name: API Support
+  description: API для управления дронами доставки
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: SkyPost Drone Service API
+  version: "1.0"
+paths:
+  /api/drones/{drone_id}/command:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет команду управления конкретному дрону
+      parameters:
+      - description: ID дрона
+        in: path
+        name: drone_id
+        required: true
+        type: string
+      - description: Команда для дрона
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_request.SendCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.CommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Error'
+      summary: Отправить команду дрону
+      tags:
+      - drones
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Проверка состояния сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Health'
+      summary: Health Check
+      tags:
+      - monitoring
+  /status:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает текущий статус первого зарегистрированного дрона
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.DroneStatus'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Error'
+      summary: Получить статус дрона
+      tags:
+      - drones
+  /ws/admin:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Устанавливает WebSocket соединение для мониторинга дронов администратором
+        Администратор получает обновления статуса всех дронов и доставок в реальном времени
+      parameters:
+      - description: ID администратора
+        in: query
+        name: admin_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+      summary: WebSocket подключение администратора
+      tags:
+      - websocket
+  /ws/drone:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Устанавливает WebSocket соединение для дрона. Первое сообщение должно быть регистрацией с ip_address
+        Поддерживаемые типы сообщений: heartbeat, status_update, delivery_update, video_frame, arrived_at_destination, cargo_dropped
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+      summary: WebSocket подключение дрона
+      tags:
+      - websocket
+  /ws/drone/{drone_id}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Устанавливает WebSocket соединение для дрона. Первое сообщение должно быть регистрацией с ip_address
+        Поддерживаемые типы сообщений: heartbeat, status_update, delivery_update, video_frame, arrived_at_destination, cargo_dropped
+      parameters:
+      - description: ID дрона (опционально)
+        in: path
+        name: drone_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+      summary: WebSocket подключение дрона
+      tags:
+      - websocket
+  /ws/drone/{drone_id}/video:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Устанавливает WebSocket соединение для получения видео потока от конкретного дрона
+        Администратор подключается к этому эндпоинту для просмотра видео в реальном времени
+      parameters:
+      - description: ID дрона
+        in: path
+        name: drone_id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+        "400":
+          description: drone_id required
+          schema:
+            $ref: '#/definitions/github_com_skr1ms_SkyPostDelivery_drone-service_internal_controller_http_v1_response.Error'
+      summary: WebSocket для видео потока дрона
+      tags:
+      - websocket
+swagger: "2.0"

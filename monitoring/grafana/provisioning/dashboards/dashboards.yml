@@ -1,0 +1,62 @@
+apiVersion: 1
+
+providers:
+  - name: 'go-orchestrator'
+    orgId: 1
+    folder: 'Go Orchestrator'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/go-orchestrator
+
+  - name: 'drone-service'
+    orgId: 1
+    folder: 'Drone Service'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/drone-service
+
+  - name: 'admin-panel'
+    orgId: 1
+    folder: 'Admin Panel'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/admin-panel
+
+  - name: 'system'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/system
+
+  - name: 'rabbitmq'
+    orgId: 1
+    folder: 'RabbitMQ'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/rabbitmq
+
+  - name: 'postgres'
+    orgId: 1
+    folder: 'PostgreSQL'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/postgres

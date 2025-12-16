@@ -1,0 +1,425 @@
+# run: docker compose --env-file .env -f deployment/docker/docker-compose.prod.yml up --build -d
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres-prod
+    env_file:
+      - ../../.env.prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - skypost-delivery-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio-prod
+    env_file:
+      - ../../.env.prod
+    command: server /data --address ":9000" --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_PUBLIC_URL}
+      MINIO_CONSOLE_SECURE_TLS_REDIRECT: "off"
+      MINIO_BROWSER_REDIRECT: "off"
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - skypost-delivery-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:latest
+    container_name: redis-prod
+    env_file:
+      - ../../.env.prod
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  rabbitmq:
+    image: rabbitmq:4.2.0-rc.1-management
+    container_name: rabbitmq-prod
+    env_file:
+      - ../../.env.prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-default}
+    command: >
+      sh -c "
+        rabbitmq-plugins enable rabbitmq_prometheus &&
+        rabbitmq-server
+      "
+    expose:
+      - "5672"
+      - "15672"
+      - "15692"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    labels:
+      - "logging=promtail"
+      
+  go-orchestrator:
+    build:
+      context: ../../backend/go-orchestrator
+      dockerfile: Dockerfile
+    container_name: orchestrator-prod
+    env_file:
+      - ../../.env.prod
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_VERSION: ${APP_VERSION}
+      HTTP_PORT: ${GO_ORCHESTRATOR_HTTP_PORT}
+      GO_GRPC_PORT: ${GO_ORCHESTRATOR_GRPC_PORT}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      QR_HMAC_SECRET: ${QR_HMAC_SECRET}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
+      MINIO_BUCKET_QR_CODES: ${MINIO_BUCKET_QR_CODES}
+      MINIO_BUCKET_RECORDS: ${MINIO_BUCKET_RECORDS}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      SMSAERO_URL: ${SMSAERO_URL}
+      SMSAERO_EMAIL: ${SMSAERO_EMAIL}
+      SMSAERO_API_KEY: ${SMSAERO_API_KEY}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MIGRATIONS_PATH: /app/migrations
+      GRPC_DRONE_SERVICE_URL: drone-service:50051
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672/${RABBITMQ_VHOST:-/}
+      ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
+      ADMIN_FULLNAME: ${ADMIN_FULLNAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PHONE: ${ADMIN_PHONE}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_CREATED_AT: ${ADMIN_CREATED_AT}
+      SECOND_ADMIN_FULLNAME: ${SECOND_ADMIN_FULLNAME}
+      SECOND_ADMIN_EMAIL: ${SECOND_ADMIN_EMAIL}
+      SECOND_ADMIN_PHONE: ${SECOND_ADMIN_PHONE}
+      SECOND_ADMIN_PASSWORD: ${SECOND_ADMIN_PASSWORD}
+      SECOND_ADMIN_CREATED_AT: ${SECOND_ADMIN_CREATED_AT}
+      FIREBASE_CREDENTIALS_FILE_IN_DOCKER: ${FIREBASE_CREDENTIALS_FILE_IN_DOCKER}
+      GIN_MODE: ${GIN_MODE:-release}
+    expose:
+      - "8080"
+      - "50052"
+      - "9091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ${FIREBASE_CREDENTIALS_FILE_ON_YOUR_OS:-./secrets/firebase-service-account.json}:/app/secrets/firebase-service-account.json:ro
+
+  drone-service:
+    build:
+      context: ../../backend/drone-service
+      dockerfile: Dockerfile
+    container_name: drone-service-prod
+    env_file:
+      - ../../.env.prod
+    environment:
+      DRONE_SERVICE_GRPC_PORT: ${DRONE_SERVICE_GRPC_PORT}
+      DRONE_SERVICE_HTTP_PORT: ${DRONE_SERVICE_HTTP_PORT}
+      DRONE_SERVICE_HTTP_URL: ${DRONE_SERVICE_HTTP_URL}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MIGRATIONS_PATH: /app/migrations
+      GRPC_GO_ORCHESTRATOR_URL: go-orchestrator:50052
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672/${RABBITMQ_VHOST:-/}
+      WEBSOCKET_BROADCAST_INTERVAL: ${WEBSOCKET_BROADCAST_INTERVAL:-5}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_RECORDS: ${MINIO_BUCKET_RECORDS}
+      GIN_MODE: ${GIN_MODE:-release}
+    expose:
+      - "8081"
+      - "50051"
+      - "9092"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      go-orchestrator:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  admin-panel:
+    build:
+      context: ../..
+      dockerfile: admin_panel/Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_MINIO_URL: ${VITE_MINIO_URL}
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL}
+    container_name: admin-panel-prod
+    expose:
+      - "80"
+    depends_on:
+      - orchestrator
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-prod
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ../nginx/prod.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - orchestrator
+      - drone-service
+      - admin-panel
+      - minio
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-prod
+    env_file:
+      - ../../.env.prod
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ../../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    expose:
+      - "9090"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki-prod
+    user: "0:0"
+    env_file:
+      - ../../.env.prod
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ../../monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    expose:
+      - "3100"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail-prod
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ../../monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-prod
+    env_file:
+      - ../../.env.prod
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=
+      - GF_SERVER_ROOT_URL=${GRAFANA_PUBLIC_URL}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN}
+      - GF_SERVER_PROTOCOL=http
+      - GRAFANA_PORT=3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    expose:
+      - "3000"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor-prod
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    expose:
+      - "8080"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    environment:
+      - DEPRECATED_DOCKER_QUERY=docker
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter-prod
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    expose:
+      - "9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      logging_jobname: "containerlogs"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-prod
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    expose:
+      - "9100"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+networks:
+  skypost-delivery-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local

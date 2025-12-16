@@ -1,0 +1,261 @@
+include:
+  - .gitlab-ci-prod.yml
+  - .gitlab-ci-dev.yml
+
+workflow:
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes:
+        - "README.md"
+        - "docs/**/*"
+      when: never
+    - when: always
+
+stages:
+  - build
+  - test
+  - deploy
+  - cleanup
+
+variables:
+  FORCE_BUILD_ALL: "false"
+  DOCKER_BUILDKIT: "1"
+  DOCKER_CLI_IMAGE: docker:28.5.0-cli
+  GO_IMAGE: golang:1.25-alpine
+  PYTHON_IMAGE: python:3.14-slim
+  NODE_IMAGE: node:25-alpine
+  POSTGRES_IMAGE: postgres:17-alpine
+  RABBITMQ_IMAGE: rabbitmq:4.2.0-rc.1-management
+
+.shared_changes: &shared_changes
+  - .gitlab-ci.yml
+  - gitlab-ci-*.yml
+  - deployment/**/*
+  - env.*
+  - env.*/**
+
+.go_orchestrator_changes: &go_orchestrator_changes
+  - backend/go-orchestrator/**/*
+  - backend/go-orchestrator/Dockerfile
+  - backend/go-orchestrator/go.mod
+  - backend/go-orchestrator/go.sum
+
+.drone_service_changes: &drone_service_changes
+  - backend/drone-service/**/*
+  - backend/drone-service/Dockerfile
+  - backend/drone-service/requirements.txt
+
+.admin_panel_changes: &admin_panel_changes
+  - admin_panel/**/*
+  - admin_panel/Dockerfile
+  - admin_panel/package.json
+  - admin_panel/package-lock.json
+
+.default-docker-login:
+  image: $DOCKER_CLI_IMAGE
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+
+# ---------------------------------------------------------------------------
+# Build stage
+# ---------------------------------------------------------------------------
+build:go-orchestrator:
+  stage: build
+  extends: .default-docker-login
+  script:
+    - |
+      docker pull "$CI_REGISTRY_IMAGE/go-orchestrator:branch-${CI_COMMIT_REF_SLUG}" || \
+      docker pull "$CI_REGISTRY_IMAGE/go-orchestrator:latest" || true
+    - |
+      docker build \
+        --cache-from "$CI_REGISTRY_IMAGE/go-orchestrator:branch-${CI_COMMIT_REF_SLUG}" \
+        --cache-from "$CI_REGISTRY_IMAGE/go-orchestrator:latest" \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        -t "$CI_REGISTRY_IMAGE/go-orchestrator:${CI_COMMIT_SHA}" \
+        -t "$CI_REGISTRY_IMAGE/go-orchestrator:branch-${CI_COMMIT_REF_SLUG}" \
+        backend/go-orchestrator
+    - docker push "$CI_REGISTRY_IMAGE/go-orchestrator:${CI_COMMIT_SHA}"
+    - docker push "$CI_REGISTRY_IMAGE/go-orchestrator:branch-${CI_COMMIT_REF_SLUG}"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        docker tag "$CI_REGISTRY_IMAGE/go-orchestrator:${CI_COMMIT_SHA}" "$CI_REGISTRY_IMAGE/go-orchestrator:latest"
+        docker push "$CI_REGISTRY_IMAGE/go-orchestrator:latest"
+      fi
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *go_orchestrator_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+build:drone-service:
+  stage: build
+  extends: .default-docker-login
+  script:
+    - |
+      docker pull "$CI_REGISTRY_IMAGE/drone-service:branch-${CI_COMMIT_REF_SLUG}" || \
+      docker pull "$CI_REGISTRY_IMAGE/drone-service:latest" || true
+    - |
+      docker build \
+        --cache-from "$CI_REGISTRY_IMAGE/drone-service:branch-${CI_COMMIT_REF_SLUG}" \
+        --cache-from "$CI_REGISTRY_IMAGE/drone-service:latest" \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        -t "$CI_REGISTRY_IMAGE/drone-service:${CI_COMMIT_SHA}" \
+        -t "$CI_REGISTRY_IMAGE/drone-service:branch-${CI_COMMIT_REF_SLUG}" \
+        -f backend/drone-service/Dockerfile \
+        .
+    - docker push "$CI_REGISTRY_IMAGE/drone-service:${CI_COMMIT_SHA}"
+    - docker push "$CI_REGISTRY_IMAGE/drone-service:branch-${CI_COMMIT_REF_SLUG}"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        docker tag "$CI_REGISTRY_IMAGE/drone-service:${CI_COMMIT_SHA}" "$CI_REGISTRY_IMAGE/drone-service:latest"
+        docker push "$CI_REGISTRY_IMAGE/drone-service:latest"
+      fi
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *drone_service_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+build:admin-panel:
+  stage: build
+  extends: .default-docker-login
+  script:
+    - |
+      docker pull "$CI_REGISTRY_IMAGE/admin-panel:branch-${CI_COMMIT_REF_SLUG}" || \
+      docker pull "$CI_REGISTRY_IMAGE/admin-panel:latest" || true
+    - |
+      docker build \
+        --cache-from "$CI_REGISTRY_IMAGE/admin-panel:branch-${CI_COMMIT_REF_SLUG}" \
+        --cache-from "$CI_REGISTRY_IMAGE/admin-panel:latest" \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --build-arg VITE_API_URL=${VITE_API_URL:-/api/v1} \
+        --build-arg VITE_MINIO_URL=${VITE_MINIO_URL:-http://localhost:9000} \
+        --build-arg VITE_GRAFANA_URL=${VITE_GRAFANA_URL:-http://localhost:3000} \
+        -t "$CI_REGISTRY_IMAGE/admin-panel:${CI_COMMIT_SHA}" \
+        -t "$CI_REGISTRY_IMAGE/admin-panel:branch-${CI_COMMIT_REF_SLUG}" \
+        -f admin_panel/Dockerfile \
+        .
+    - docker push "$CI_REGISTRY_IMAGE/admin-panel:${CI_COMMIT_SHA}"
+    - docker push "$CI_REGISTRY_IMAGE/admin-panel:branch-${CI_COMMIT_REF_SLUG}"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        docker tag "$CI_REGISTRY_IMAGE/admin-panel:${CI_COMMIT_SHA}" "$CI_REGISTRY_IMAGE/admin-panel:latest"
+        docker push "$CI_REGISTRY_IMAGE/admin-panel:latest"
+      fi
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *admin_panel_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+# ---------------------------------------------------------------------------
+# Test stage
+# ---------------------------------------------------------------------------
+test:go:
+  stage: test
+  image: $GO_IMAGE
+  services:
+    - $POSTGRES_IMAGE
+    - $RABBITMQ_IMAGE
+  variables:
+    POSTGRES_DB: drone_service_test
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_HOST: postgres
+    RABBITMQ_DEFAULT_USER: admin
+    RABBITMQ_DEFAULT_PASS: admin
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+    RABBITMQ_QUEUE_NAME: test.drone.tasks
+    RABBITMQ_EXCHANGE: ""
+    RABBITMQ_ROUTING_KEY: test.drone.tasks
+    RABBITMQ_PREFETCH_COUNT: "1"
+    RABBITMQ_CONNECTION_TIMEOUT: 30s
+    RABBITMQ_RECONNECT_DELAY: 5s
+    RABBITMQ_PUBLISH_RETRIES: "3"
+    RABBITMQ_DURABLE_QUEUE: "true"
+    RABBITMQ_AUTO_DELETE: "false"
+  before_script:
+    - apk add --no-cache bash git build-base postgresql-client curl netcat-openbsd
+    - for i in $(seq 1 25); do PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -d $POSTGRES_DB -c 'select 1' >/dev/null 2>&1 && break; sleep 2; done
+    - for i in $(seq 1 30); do nc -zv $RABBITMQ_HOST 5672 >/dev/null 2>&1 && break; sleep 2; done
+    - cd backend/go-orchestrator && go mod download
+  script: go test -v -race -cover ./...
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *go_orchestrator_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+test:drone-service:
+  stage: test
+  image: $PYTHON_IMAGE
+  services:
+    - $POSTGRES_IMAGE
+    - $RABBITMQ_IMAGE
+  variables:
+    POSTGRES_DB: drone_service_test
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/drone_service_test
+    RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+    RABBITMQ_QUEUE_NAME: test.drone.tasks
+  before_script:
+    - apk add --no-cache bash gcc musl-dev linux-headers postgresql-client curl
+    - for i in $(seq 1 25); do PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -c 'select 1' >/dev/null 2>&1 && break; sleep 2; done
+    - cd backend/drone-service
+    - pip install --no-cache-dir -r requirements.txt
+    - pip install --no-cache-dir pytest pytest-cov pytest-asyncio
+  script: pytest tests/ --cov=app --cov-report=term-missing
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *drone_service_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+test:admin-panel:
+  stage: test
+  image: $NODE_IMAGE
+  before_script:
+    - apk add --no-cache bash
+    - cd admin_panel
+    - npm ci
+  script:
+    - npm run lint
+  rules:
+    - if: '$FORCE_BUILD_ALL == "true"'
+      when: always
+    - changes: *admin_panel_changes
+      when: always
+    - changes: *shared_changes
+      when: always
+    - when: never
+
+# ---------------------------------------------------------------------------
+# Cleanup stage
+# ---------------------------------------------------------------------------
+docker:gc:
+  stage: cleanup
+  image: $DOCKER_CLI_IMAGE
+  script:
+    - docker image prune -af --filter "until=24h" || true
+    - docker builder prune -af --filter "until=24h" || true
+  rules:
+    - when: always
+  allow_failure: true

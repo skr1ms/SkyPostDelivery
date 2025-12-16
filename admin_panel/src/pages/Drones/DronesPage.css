@@ -1,0 +1,182 @@
+.drones-page {
+  animation: fadeIn 0.5s ease;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.drones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.drone-card {
+  background: linear-gradient(135deg, #1e1d2b 0%, #252434 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.drone-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  border-color: #6c5ce7;
+}
+
+.drone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.drone-header h3 {
+  font-size: 1.25rem;
+  color: #fffffe;
+}
+
+.status-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.status-idle {
+  background: #00d4aa;
+  color: #0f0e17;
+}
+
+.status-busy {
+  background: #ff6b9d;
+  color: #0f0e17;
+}
+
+.status-error {
+  background: #ff4757;
+  color: #fffffe;
+}
+
+.drone-id {
+  color: #a7a9be;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  font-family: monospace;
+}
+
+.drone-ip {
+  color: #6c5ce7;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.drone-battery {
+  color: #00d4aa;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drone-battery strong {
+  color: #fffffe;
+  font-size: 1rem;
+}
+
+.drone-status-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #a7a9be;
+  font-size: 0.875rem;
+}
+
+.drone-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.loading,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #a7a9be;
+  font-size: 1.125rem;
+}
+
+.drone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #a7a9be;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: rgba(108, 92, 231, 0.05);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #fffffe;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.form-group input::placeholder {
+  color: #a7a9be;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

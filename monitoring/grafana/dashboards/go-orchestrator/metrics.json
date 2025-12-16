@@ -1,0 +1,362 @@
+{
+  "uid": "go-orchestrator-metrics",
+  "title": "Go Orchestrator - Metrics",
+  "tags": ["go", "orchestrator", "metrics"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP Request Rate",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{service=\"go-orchestrator\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{method}} {{endpoint}} - {{status}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "reqps"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "HTTP Request Duration (p95)",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service=\"go-orchestrator\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{method}} {{endpoint}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "HTTP Error Rate (5xx)",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{service=\"go-orchestrator\",status=~\"5..\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{status}} - {{endpoint}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          },
+          "unit": "reqps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "gRPC Request Rate",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(grpc_requests_total{service=\"go-orchestrator\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{method}} - {{code}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "reqps"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "gRPC Request Duration (p95)",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(grpc_request_duration_seconds_bucket{service=\"go-orchestrator\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Memory Usage",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{service=\"go-orchestrator\"}",
+          "refId": "A",
+          "legendFormat": "Allocated"
+        },
+        {
+          "expr": "go_memstats_sys_bytes{service=\"go-orchestrator\"}",
+          "refId": "B",
+          "legendFormat": "System"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{service=\"go-orchestrator\"}",
+          "refId": "C",
+          "legendFormat": "Heap In Use"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "bytes"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "lastNotNull", "max"]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Goroutines Count",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "go_goroutines{service=\"go-orchestrator\"}",
+          "refId": "A",
+          "legendFormat": "Goroutines"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "GC Duration",
+      "type": "graph",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(go_gc_duration_seconds_sum{service=\"go-orchestrator\"}[5m])",
+          "refId": "A",
+          "legendFormat": "GC Duration"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

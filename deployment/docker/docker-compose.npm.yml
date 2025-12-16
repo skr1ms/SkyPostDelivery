@@ -1,0 +1,367 @@
+# run: docker compose --env-file .env -f deployment/docker/docker-compose.npm.yml up --build -d
+# this configuration is used on a production server with nginx proxy manager, without it use the prod config
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres-npm
+    env_file:
+      - ../../.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio-npm
+    env_file:
+      - ../../.env
+    command: server /data --address ":9000" --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_PUBLIC_URL}
+      MINIO_CONSOLE_SECURE_TLS_REDIRECT: "off"
+      MINIO_BROWSER_REDIRECT: "off"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - skypost-delivery-network
+
+  redis:
+    image: redis:latest
+    container_name: redis-npm
+    env_file:
+      - ../../.env
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.2.0-rc.1-management
+    container_name: rabbitmq-npm
+    env_file:
+      - ../../.env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-default}
+    command: >
+      sh -c "
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server
+      "
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+      - "${RABBITMQ_PROMETHEUS_PORT:-15692}:15692"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    labels:
+      - "logging=promtail"
+
+  go-orchestrator:
+    build:
+      context: ../../backend/go-orchestrator
+      dockerfile: Dockerfile
+    container_name: orchestrator-npm
+    env_file:
+      - ../../.env
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_VERSION: ${APP_VERSION}
+      HTTP_PORT: ${GO_ORCHESTRATOR_HTTP_PORT}
+      GO_GRPC_PORT: ${GO_ORCHESTRATOR_GRPC_PORT}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      QR_HMAC_SECRET: ${QR_HMAC_SECRET}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
+      MINIO_BUCKET_QR_CODES: ${MINIO_BUCKET_QR_CODES}
+      MINIO_BUCKET_RECORDS: ${MINIO_BUCKET_RECORDS}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      SMSAERO_URL: ${SMSAERO_URL}
+      SMSAERO_EMAIL: ${SMSAERO_EMAIL}
+      SMSAERO_API_KEY: ${SMSAERO_API_KEY}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MIGRATIONS_PATH: /app/migrations
+      GRPC_DRONE_SERVICE_URL: drone-service:50051
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672/${RABBITMQ_VHOST:-/}
+      ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
+      ADMIN_FULLNAME: ${ADMIN_FULLNAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PHONE: ${ADMIN_PHONE}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_CREATED_AT: ${ADMIN_CREATED_AT}
+      SECOND_ADMIN_FULLNAME: ${SECOND_ADMIN_FULLNAME}
+      SECOND_ADMIN_EMAIL: ${SECOND_ADMIN_EMAIL}
+      SECOND_ADMIN_PHONE: ${SECOND_ADMIN_PHONE}
+      SECOND_ADMIN_PASSWORD: ${SECOND_ADMIN_PASSWORD}
+      SECOND_ADMIN_CREATED_AT: ${SECOND_ADMIN_CREATED_AT}
+      FIREBASE_CREDENTIALS_FILE_IN_DOCKER: ${FIREBASE_CREDENTIALS_FILE_IN_DOCKER}
+      GIN_MODE: ${GIN_MODE:-release}
+    ports:
+      - "${GO_ORCHESTRATOR_HTTP_PORT:-8080}:8080"
+      - "${GO_ORCHESTRATOR_GRPC_PORT:-50052}:50052"
+      - "9091:9091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    volumes:
+      - ${FIREBASE_CREDENTIALS_FILE_ON_YOUR_OS:-./secrets/firebase-service-account.json}:/app/secrets/firebase-service-account.json:ro
+
+  drone-service:
+    build:
+      context: ../../backend/drone-service
+      dockerfile: Dockerfile
+    container_name: drone-service-npm
+    env_file:
+      - ../../.env
+    environment:
+      DRONE_SERVICE_GRPC_PORT: ${DRONE_SERVICE_GRPC_PORT}
+      DRONE_SERVICE_HTTP_PORT: ${DRONE_SERVICE_HTTP_PORT}
+      DRONE_SERVICE_HTTP_URL: ${DRONE_SERVICE_HTTP_URL}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MIGRATIONS_PATH: /app/migrations
+      GRPC_GO_ORCHESTRATOR_URL: go-orchestrator:50052
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672/${RABBITMQ_VHOST:-/}
+      WEBSOCKET_BROADCAST_INTERVAL: ${WEBSOCKET_BROADCAST_INTERVAL:-5}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_RECORDS: ${MINIO_BUCKET_RECORDS}
+      GIN_MODE: ${GIN_MODE:-release}
+    ports:
+      - "${DRONE_SERVICE_GRPC_PORT:-50051}:50051"
+      - "${DRONE_SERVICE_HTTP_PORT:-8081}:8081"
+      - "9092:9092"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      go-orchestrator:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  admin-panel:
+    build:
+      context: ../..
+      dockerfile: admin_panel/Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_MINIO_URL: ${VITE_MINIO_URL}
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL}
+    container_name: admin-panel-npm
+    ports:
+      - "${ADMIN_PANEL_PORT:-80}:80"
+    depends_on:
+      - go-orchestrator
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    labels:
+      - "logging=promtail"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-npm
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ../../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki-npm
+    user: "0:0"
+    command: -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ../../monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail-npm
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ../../monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-npm
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=
+      - GF_SERVER_ROOT_URL=${GRAFANA_PUBLIC_URL}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN}
+      - GF_SERVER_PROTOCOL=http
+      - GRAFANA_PORT=3000
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor-npm
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /etc/machine-id:/etc/machine-id:ro
+    expose:
+      - "8080"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter-npm
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    expose:
+      - "9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      logging_jobname: "containerlogs"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-npm
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    expose:
+      - "9100"
+    networks:
+      - skypost-delivery-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  skypost-delivery-network:
+    driver: bridge

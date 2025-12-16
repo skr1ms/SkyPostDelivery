@@ -1,0 +1,135 @@
+{
+  "uid": "system-logs",
+  "title": "System - Logs",
+  "tags": ["system", "docker", "infrastructure", "logs"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "All System Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{service=~\"go-orchestrator|drone-service|admin-panel|postgres|minio\"}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "PostgreSQL Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{service=\"postgres\"}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "MinIO Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{service=\"minio\"}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "All Error Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "expr": "{service=~\"go-orchestrator|drone-service|admin-panel|postgres|minio\"} |~ \"(?i)(error|fatal|panic|exception|failed|critical)\"",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+  ]
+}
